@@ -96,6 +96,12 @@ class OAuthController extends AppController
         $authRequest = $this->authorizationServer->validateAuthorizationRequest($this->request);
         $clientId    = $authRequest->getClient()->getIdentifier();
 
+        // 'redirect_uri' is considered an optional argument but grant implementations dont always
+        // seem to implement the fallback from the client. Set it anyway here
+        if ($authRequest->getRedirectUri() === null && ($authRequest->getClient() && $authRequest->getClient()->getRedirectUri())) {
+            $authRequest->setRedirectUri($authRequest->getClient()->getRedirectUri());
+        }
+
         // Once the user has logged in set the user on the AuthorizationRequest
         $user = $this->OAuth->getSessionUserData();
         $authRequest->setUser($user);
@@ -151,6 +157,8 @@ class OAuthController extends AppController
         if (Configure::read('OAuthServer.serviceDisabled')) {
             throw new ServiceNotAvailableException();
         }
+        $request  = $this->request;
+        $response = $this->response;
         try {
             return $this->authorizationServer->respondToAccessTokenRequest($request, $response);
         } catch (OAuthServerException $exception) {
@@ -159,6 +167,7 @@ class OAuthController extends AppController
             return (new OAuthServerException($exception->getMessage(), 0, 'unknown_error', 500))
                 ->generateHttpResponse($response);
         }
+        return $response;
     }
 
     /**
