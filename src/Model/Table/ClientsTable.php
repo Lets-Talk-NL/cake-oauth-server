@@ -51,6 +51,7 @@ class ClientsTable extends Table implements ClientRepositoryInterface
      */
     public function getClientEntity($clientIdentifier)
     {
+        /** @var Client $client */
         if ($client = $this->find()->where([$this->getPrimaryKey() => $clientIdentifier])->first()) {
             return $client->transformToDTO();
         }
