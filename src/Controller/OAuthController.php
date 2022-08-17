@@ -132,7 +132,7 @@ class OAuthController extends AppController
             }
         } catch (OAuthServerException $exception) {
             // @TODO this is a JSON response ..?
-            return $exception->generateHttpResponse($response);
+            return $exception->generateHttpResponse($this->response);
         } catch (Exception $exception) {
             $body = new Stream('php://temp', 'r+');
             $body->write($exception->getMessage());
