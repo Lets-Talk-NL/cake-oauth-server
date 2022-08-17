@@ -103,8 +103,9 @@ class OAuthController extends AppController
         }
 
         // Once the user has logged in set the user on the AuthorizationRequest
-        $user = $this->OAuth->getSessionUserData();
-        $authRequest->setUser($user);
+        if ($user = $this->OAuth->getSessionUserData()) {
+            $authRequest->setUser($user);
+        }
 
         $eventManager = EventManager::instance();
         $eventManager->dispatch(new Event('OAuthServer.beforeAuthorize', $this));

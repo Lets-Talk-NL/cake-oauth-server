@@ -13,6 +13,7 @@ use League\OAuth2\Server\Grant\GrantTypeInterface;
 use League\OAuth2\Server\ResourceServer;
 use OAuthServer\Lib\Enum\GrantType;
 use OAuthServer\Lib\Enum\Repository;
+use OAuthServer\Lib\Enum\Token;
 use OAuthServer\Lib\Factory;
 use DateInterval;
 use InvalidArgumentException;
@@ -141,9 +142,10 @@ class Plugin extends BasePlugin
         $configuredRefreshTokens = Configure::read('OAuthServer.refreshTokensEnabled');
         $privateKey              = $this->getPrivateKey();
         $encryptionKey           = $this->getEncryptionKey();
+        $ttl                     = $this->getTokensTimeToLiveIntervals();
         $server                  = Factory::authorizationServer($privateKey, $encryptionKey, $configuredRepositories);
         foreach ($this->getGrantObjects() as $grantObject) {
-            $server->enableGrantType($grantObject);
+            $server->enableGrantType($grantObject, $ttl[Token::ACCESS_TOKEN] ?? null);
         }
         $server->setEmitter($this->getEmitter());
         $server->revokeRefreshTokens($configuredRefreshTokens ?? true);
