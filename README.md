@@ -67,13 +67,16 @@ $ bin/cake migrations migrate --plugin OAuthServer
 
 ## Implementation
 ### Custom repository implementations
-Repository implementations are provided by default by the plugin. Except for the user repository.
+Repository implementations are provided by default by the plugin. Except for the `Repository::USER` and `Repository::IDENTITY` repositories.
 
 The user repository requires an implementation of `League\OAuth2\Server\Repositories\UserRepositoryInterface` configured
 in the repository mapping configuration key `OAuthServer.repositories` using:
 ```
 \OAuthServer\Lib\Enum\Repository::USER => 'CustomTableAliasOfUsers'
 ```
+The identity repository requires at least the same but if the OpenID Connect extension is enabled
+then provide a repository implementation of `OpenIDConnectServer\Repositories\IdentityProviderInterface`.
+
 ### Authorizing users using the `authorization_code` grant
 Change your login method to look as follows:
 
