@@ -7,9 +7,7 @@ use Cake\TestSuite\IntegrationTestCase;
 use OAuthServer\Controller\OAuthController;
 use App\Controller\TestAppController;
 use App\Model\Table\UsersTable;
-use OAuthServer\Lib\Enum\IndexMode;
 use Cake\Core\Configure;
-use phpDocumentor\Reflection\Types\Void_;
 
 class OAuthControllerTest extends IntegrationTestCase
 {
