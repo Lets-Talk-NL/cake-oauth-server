@@ -17,7 +17,7 @@ class Scope implements ScopeEntityInterface
     /**
      * @var string
      */
-    protected string $description;
+    protected string $description = '';
 
     /**
      * @return string

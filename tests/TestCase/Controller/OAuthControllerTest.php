@@ -61,7 +61,7 @@ class OAuthControllerTest extends IntegrationTestCase
     public function testOAuthIndexRedirectsToAuthorize(): void
     {
         Configure::write('OAuthServer.indexRedirectDisabled', false);
-        $this->session(['Auth.User.id' => 5]);
+        $this->session(['Auth.User.id' => 4]);
         $this->get($this->url("/oauth") . "?client_id=CID&anything=at_all");
         $this->assertRedirect(['controller' => 'OAuth', 'action' => 'authorize', '?' => ['client_id' => 'CID', 'anything' => 'at_all']]);
     }
@@ -72,7 +72,7 @@ class OAuthControllerTest extends IntegrationTestCase
     public function testOAuthIndexRedirectsToDisabled(): void
     {
         Configure::write('OAuthServer.indexRedirectDisabled', true);
-        $this->session(['Auth.User.id' => 5]);
+        $this->session(['Auth.User.id' => 4]);
         $this->get($this->url("/oauth") . "?client_id=CID&anything=at_all");
         $this->assertResponseCode(404);
     }
@@ -82,7 +82,7 @@ class OAuthControllerTest extends IntegrationTestCase
      */
     public function testAuthorizeInvalidParams(): void
     {
-        $this->session(['Auth.User.id' => 5]);
+        $this->session(['Auth.User.id' => 4]);
         $_GET = ['client_id' => 'INVALID', 'redirect_uri' => 'http://www.example.com', 'response_type' => 'code', 'scope' => 'test'];
         $this->get($this->url('/oauth/authorize') . '?' . http_build_query($_GET));
         $this->assertResponseError();
@@ -102,15 +102,49 @@ class OAuthControllerTest extends IntegrationTestCase
     /**
      * @return void
      */
+    public function testAuthorizationCodeWithOpenIdConnect(): void
+    {
+        $this->session(['Auth.User.id' => 4]);
+
+        $scope       = 'openid email';
+        $redirectUri = 'http://www.example.com';
+        $query       = ['client_id' => 'TEST', 'redirect_uri' => $redirectUri, 'response_type' => 'code', 'scope' => $scope];
+
+        $authorizeUrl = $this->url('/oauth/authorize') . '?' . http_build_query($query);
+        $this->get($authorizeUrl);
+        $this->assertResponseCode(200);
+        $this->post($authorizeUrl, ['authorization' => 'Approve']);
+        $this->assertResponseCode(302);
+        $location = $this->_response->getHeaderLine('Location');
+        $this->assertInternalType('string', $location);
+        $prefix = $redirectUri . '?code=';
+        $this->assertTextStartsWith($prefix, $location);
+        $code                 = substr($location, strlen($prefix));
+        $_SERVER['HTTP_HOST'] = 'www.example.com';
+        $accessTokenUrl       = $this->url('/oauth/access_token', 'json');
+        $this->post($accessTokenUrl, [
+            'grant_type'    => 'authorization_code',
+            'client_id'     => 'TEST',
+            'client_secret' => 'TestSecret',
+            'redirect_uri'  => $redirectUri,
+            'code'          => $code,
+            'scope'         => $scope,
+        ]);
+        $this->assertResponseContains('"id_token":');
+    }
+
+    /**
+     * @return void
+     */
     public function testStoreCurrentUserAndDefaultAuth(): void
     {
-        $this->session(['Auth.User.id' => 5]);
+        $this->session(['Auth.User.id' => 4]);
 
         $_GET = ['client_id' => 'TEST', 'redirect_uri' => 'http://www.example.com', 'response_type' => 'code', 'scope' => 'test'];
         $this->post('/oauth/authorize' . '?' . http_build_query($_GET), ['authorization' => 'Approve']);
 
         $authCodes = TableRegistry::get('OAuthServer.AuthCodes');
-        $this->assertTrue($authCodes->exists(['client_id' => 'TEST', 'user_id' => 5]), 'Auth token in database was not correctly assigned');
+        $this->assertTrue($authCodes->exists(['client_id' => 'TEST', 'user_id' => 4]), 'Auth token in database was not correctly assigned');
     }
 
     /**
