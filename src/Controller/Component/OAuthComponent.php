@@ -86,29 +86,4 @@ class OAuthComponent extends Component
         $options = ['client_id' => $clientId, 'user_id' => $userId];
         return !!$this->AccessTokens->find('active', $options)->count();
     }
-
-    /**
-     * Enriches the given OAuth 2.0 server scope data object implementations
-     * with their aditionally plugin provided descriptions
-     *
-     * @param ScopeEntityInterface ...$scopes
-     * @return void
-     */
-    public function enrichScopes(ScopeEntityInterface ...$scopes): void
-    {
-        $ids        = array_unique(map($scopes, fn(ScopeEntityInterface $scope) => $scope->getIdentifier()));
-        $primaryKey = $this->Scopes->getPrimaryKey();
-        $entities   = $this->Scopes
-            ->find()
-            ->whereInList($primaryKey, $ids, ['allowEmpty' => true])
-            ->all()
-            ->indexBy($primaryKey)
-            ->toArray();
-        foreach ($scopes as $scope) {
-            $id = $scope->getIdentifier();
-            if ($scope instanceof ScopeData && isset($entities[$id]->description)) {
-                $scope->setDescription($entities[$id]->description);
-            }
-        }
-    }
 }

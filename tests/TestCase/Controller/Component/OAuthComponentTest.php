@@ -86,17 +86,4 @@ class OAuthComponentTest extends TestCase
         $this->component->AccessTokens->persistNewAccessToken($data);
         $this->assertTrue($this->component->hasActiveAccessTokens($clientId, $userId));
     }
-
-    /**
-     * @return void
-     */
-    public function testEnrichScopes(): void
-    {
-        $scope  = $this->component->Scopes->getScopeEntityByIdentifier('test');
-        $scopes = [$scope];
-        $this->assertNull($this->component->enrichScopes(...$scopes));
-        $this->assertEquals('test', $scope->getIdentifier());
-        $this->assertInstanceOf(Scope::class, $scope);
-        $this->assertEquals('Default scope', $scope->getDescription());
-    }
 }

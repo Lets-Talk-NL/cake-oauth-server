@@ -141,7 +141,6 @@ class OAuthController extends AppController
             return $response->withStatus(500)->withBody($body);
         }
 
-        $this->OAuth->enrichScopes(...$authRequest->getScopes());
         $this->set('authRequest', $authRequest);
         return $this->render();
     }

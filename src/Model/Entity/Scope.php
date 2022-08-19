@@ -22,6 +22,7 @@ class Scope extends Entity
     {
         $dto = new ScopeData();
         $dto->setIdentifier($this->id);
+        $dto->setDescription($this->description);
         return $dto;
     }
 }
