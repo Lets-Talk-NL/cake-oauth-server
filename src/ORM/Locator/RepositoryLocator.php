@@ -87,7 +87,7 @@ class RepositoryLocator implements LocatorInterface
     public function set($alias, Table $object)
     {
         if (!$object instanceof RepositoryInterface) {
-            throw new InvalidArgumentException();
+            throw new InvalidArgumentException('given value is not a valid oauth repository');
         }
         $alias                      = $this->checkAlias($alias);
         $this->repositories[$alias] = $object;
