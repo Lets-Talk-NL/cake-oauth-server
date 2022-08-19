@@ -9,6 +9,8 @@ use Migrations\AbstractSeed;
  * ```
  * bin/cake migrations seed --plugin=OAuthServer --seed=OpenIDConnectScopesSeed
  * ```
+ *
+ * @link https://openid.net/specs/openid-connect-core-1_0.html#ScopeClaims
  */
 class OpenIDConnectScopesSeed extends AbstractSeed
 {
