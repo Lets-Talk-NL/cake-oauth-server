@@ -6,6 +6,7 @@ Documentation README.md for `uafrica/oauth-server`
 Implementation of package `league/oauth2-server`
 ### Extension: OpenID Connect
 Implementation of package `steverhoades/oauth2-openid-connect-server`
+Requires the 'openid' scope and extension configuration value in `OAuthServer.extensions` (see default config).
 ### Optional status endpoint
 Visit using `oauth/status`
 ### Unit and integration tests
