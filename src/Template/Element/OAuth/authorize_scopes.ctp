@@ -9,7 +9,7 @@ use OAuthServer\Lib\Data\Entity\Scope as ScopeData;
     <?php foreach ($authRequest->getScopes() as $scope): ?>
         <li>
             <?php if ($scope instanceof ScopeData && $scope->getDescription()): ?>
-                <?= $scope->getIdentifier() ?>: <?= $scope->getDescription() ?>
+                <?= $scope->getDescription() ?>
             <?php else: ?>
                 <?= $scope->getIdentifier() ?>
             <?php endif; ?>
