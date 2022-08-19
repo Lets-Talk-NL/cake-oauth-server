@@ -8,6 +8,7 @@ use League\OAuth2\Server\Repositories\ClientRepositoryInterface;
 use League\OAuth2\Server\Repositories\RefreshTokenRepositoryInterface;
 use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
 use League\OAuth2\Server\Repositories\UserRepositoryInterface;
+use OpenIDConnectServer\Repositories\IdentityProviderInterface;
 use MyCLabs\Enum\Enum;
 use OAuthServer\Lib\Enum\Traits\EnumTrait;
 
@@ -20,6 +21,7 @@ use OAuthServer\Lib\Enum\Traits\EnumTrait;
  * @method static Repository REFRESH_TOKEN()
  * @method static Repository SCOPE()
  * @method static Repository USER()
+ * @method static Repository IDENTITY()
  */
 class Repository extends Enum
 {
@@ -31,6 +33,7 @@ class Repository extends Enum
     const REFRESH_TOKEN = RefreshTokenRepositoryInterface::class;
     const SCOPE         = ScopeRepositoryInterface::class;
     const USER          = UserRepositoryInterface::class;
+    const IDENTITY      = IdentityProviderInterface::class;
 
     /**
      * Maps repositories to table locator alias defaults
@@ -46,7 +49,9 @@ class Repository extends Enum
             static::CLIENT        => 'OAuthServer.Clients',
             static::REFRESH_TOKEN => 'OAuthServer.RefreshTokens',
             static::SCOPE         => 'OAuthServer.Scopes',
-            static::USER          => 'Users' // application implementation (plugin has no users implementation)
+            // application implementation (plugin has no users implementation)
+            static::USER          => 'Users',
+            static::IDENTITY      => 'Users',
         ];
         return static::enum($value, $aliases);
     }
@@ -66,6 +71,7 @@ class Repository extends Enum
             static::REFRESH_TOKEN => 'Refresh token repository',
             static::SCOPE         => 'Scope repository',
             static::USER          => 'User repository',
+            static::IDENTITY      => 'User identity repository',
         ];
         return static::enum($value, $labels);
     }

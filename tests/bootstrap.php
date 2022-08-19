@@ -96,6 +96,7 @@ if (!getenv('db_dsn')) {
 }
 \Cake\Datasource\ConnectionManager::setConfig('test', ['url' => getenv('db_dsn')]);
 \Cake\Datasource\ConnectionManager::setConfig('test_migrations', ['url' => 'sqlite:///:memory:']);
+\Cake\Datasource\ConnectionManager::alias('test', 'default');
 
 // Load test application plugins (including self load)
 \Cake\Core\Plugin::load('Migrations');

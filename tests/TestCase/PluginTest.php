@@ -2,14 +2,17 @@
 
 namespace OAuthServer\Test\TestCase\Controller;
 
+use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
 use League\OAuth2\Server\AuthorizationServer;
 use League\OAuth2\Server\CryptKey;
 use League\OAuth2\Server\Grant\GrantTypeInterface;
 use League\OAuth2\Server\Repositories\RepositoryInterface;
 use League\OAuth2\Server\ResourceServer;
+use OAuthServer\Lib\Enum\Extension;
 use OAuthServer\Lib\Enum\Repository;
 use OAuthServer\Lib\Enum\Token;
+use OAuthServer\ORM\Locator\RepositoryLocator;
 use OAuthServer\Plugin;
 use DateInterval;
 
@@ -38,6 +41,24 @@ class PluginTest extends TestCase
     public function testInstance(): void
     {
         $this->assertInstanceOf(Plugin::class, Plugin::instance());
+    }
+
+    /**
+     * @return void
+     */
+    public function testInitialize(): void
+    {
+        $this->plugin->initialize();
+        $this->assertInstanceOf(RepositoryLocator::class, $this->plugin->getTableLocator());
+    }
+
+    /**
+     * @return void
+     */
+    public function testInitializeTableLocator(): void
+    {
+        $this->plugin->initializeTableLocator();
+        $this->assertInstanceOf(RepositoryLocator::class, $this->plugin->getTableLocator());
     }
 
     /**
@@ -89,8 +110,28 @@ class PluginTest extends TestCase
     /**
      * @return void
      */
+    public function testGetConfiguredExtensions(): void
+    {
+        $this->assertEquals(array_values(Extension::toArray()), Configure::read('OAuthServer.extensions'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testHasConfiguredExtension(): void
+    {
+        $this->assertTrue($this->plugin->hasConfiguredExtension(Extension::OPENID_CONNECT()));
+    }
+
+    /**
+     * @return void
+     */
     public function testGetAuthorizationServer(): void
     {
+        $extensions = Configure::read('OAuthServer.extensions');
+        Configure::write('OAuthServer.extensions', null);
+        $this->assertInstanceOf(AuthorizationServer::class, $this->plugin->getAuthorizationServer());
+        Configure::write('OAuthServer.extensions', $extensions);
         $this->assertInstanceOf(AuthorizationServer::class, $this->plugin->getAuthorizationServer());
     }
 

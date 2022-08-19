@@ -9,6 +9,7 @@ use App\Controller\TestAppController;
 use App\Model\Table\UsersTable;
 use OAuthServer\Lib\Enum\IndexMode;
 use Cake\Core\Configure;
+use phpDocumentor\Reflection\Types\Void_;
 
 class OAuthControllerTest extends IntegrationTestCase
 {
@@ -109,8 +110,6 @@ class OAuthControllerTest extends IntegrationTestCase
 
         $_GET = ['client_id' => 'TEST', 'redirect_uri' => 'http://www.example.com', 'response_type' => 'code', 'scope' => 'test'];
         $this->post('/oauth/authorize' . '?' . http_build_query($_GET), ['authorization' => 'Approve']);
-
-        $this->assertRedirect();
 
         $authCodes = TableRegistry::get('OAuthServer.AuthCodes');
         $this->assertTrue($authCodes->exists(['client_id' => 'TEST', 'user_id' => 5]), 'Auth token in database was not correctly assigned');

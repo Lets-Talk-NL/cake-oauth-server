@@ -2,6 +2,7 @@
 
 namespace OAuthServer\Lib;
 
+use Cake\ORM\Locator\LocatorInterface;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Security;
 use Cake\Utility\Text;
@@ -25,6 +26,9 @@ use InvalidArgumentException;
 use DateInterval;
 use DateTime;
 use OAuthServer\Lib\Enum\Token;
+use OpenIDConnectServer\ClaimExtractor;
+use OpenIDConnectServer\IdTokenResponse;
+use OpenIDConnectServer\Repositories\IdentityProviderInterface;
 use function Functional\map;
 
 /**
@@ -37,7 +41,7 @@ class Factory
     /**
      * Creates a new unique client ID
      *
-     * @return string e.g. NGYcZDRjODcxYzFkY2Rk (seems popular format)
+     * @return string e.g. NGYcZDRjODcxYzFkY2Rk (seems popular format but may be any arbitrary string)
      */
     public static function clientId(): string
     {
@@ -158,39 +162,38 @@ class Factory
         string $defaultScope,
         EmitterInterface $emitter,
         array $ttlMapping,
-        array $repositoryMapping
+        LocatorInterface $repositories
     ): GrantTypeInterface {
-        $ttl          = static::timeToLiveIntervals($ttlMapping);
-        $repositories = static::repositories($repositoryMapping);
+        $ttl = static::timeToLiveIntervals($ttlMapping);
         /** @var AbstractGrant $grantObject */
         switch ($grantType->getValue()) {
             case GrantType::AUTHORIZATION_CODE:
                 $grantObject = new AuthCodeGrant(
-                    $repositories[Repository::AUTH_CODE],
-                    $repositories[Repository::REFRESH_TOKEN],
+                    $repositories->get(Repository::AUTH_CODE),
+                    $repositories->get(Repository::REFRESH_TOKEN),
                     $ttl[Token::AUTHENTICATION_TOKEN]
                 );
                 break;
             case GrantType::REFRESH_TOKEN:
-                $grantObject = new RefreshTokenGrant($repositories[Repository::REFRESH_TOKEN]);
+                $grantObject = new RefreshTokenGrant($repositories->get(Repository::REFRESH_TOKEN));
                 break;
             case GrantType::IMPLICIT:
                 $grantObject = new ImplicitGrant($ttl[Token::ACCESS_TOKEN]);
                 break;
             case GrantType::PASSWORD:
-                $grantObject = new PasswordGrant($repositories[Repository::USER], $repositories[Repository::REFRESH_TOKEN]);
+                $grantObject = new PasswordGrant($repositories->get(Repository::USER), $repositories->get(Repository::REFRESH_TOKEN));
                 break;
             default:
                 $grantClassName = GrantType::classNames($grantType->getValue());
                 $grantObject    = new $grantClassName();
         }
         $grantObject->setPrivateKey($privateKey);
-        $grantObject->setAccessTokenRepository($repositories[Repository::ACCESS_TOKEN]);
-        $grantObject->setAuthCodeRepository($repositories[Repository::AUTH_CODE]);
-        $grantObject->setClientRepository($repositories[Repository::CLIENT]);
-        $grantObject->setScopeRepository($repositories[Repository::SCOPE]);
-        $grantObject->setUserRepository($repositories[Repository::USER]);
-        $grantObject->setRefreshTokenRepository($repositories[Repository::REFRESH_TOKEN]);
+        $grantObject->setAccessTokenRepository($repositories->get(Repository::ACCESS_TOKEN));
+        $grantObject->setAuthCodeRepository($repositories->get(Repository::AUTH_CODE));
+        $grantObject->setClientRepository($repositories->get(Repository::CLIENT));
+        $grantObject->setScopeRepository($repositories->get(Repository::SCOPE));
+        $grantObject->setUserRepository($repositories->get(Repository::USER));
+        $grantObject->setRefreshTokenRepository($repositories->get(Repository::REFRESH_TOKEN));
         $grantObject->setRefreshTokenTTL($ttl[Token::REFRESH_TOKEN]);
         $grantObject->setDefaultScope($defaultScope);
         $grantObject->setEncryptionKey($encryptionKey);
@@ -199,25 +202,36 @@ class Factory
     }
 
     /**
+     * Get OAuth 2.0 OpenID Connect ID extension response type object
+     *
+     * @param IdentityProviderInterface $identityProvider
+     * @return ResponseTypeInterface
+     */
+    public static function openConnectIdTokenResponseType(IdentityProviderInterface $identityProvider): ResponseTypeInterface
+    {
+        $claimExtractor = new ClaimExtractor();
+        return new IdTokenResponse($identityProvider, $claimExtractor);
+    }
+
+    /**
      * Get OAuth 2.0 authorization server with the given private key
      *
      * @param CryptKey                   $privateKey
-     * @param string                     $encryptionKey     e.g. 'lxZFUEsBCJ2Yb14IF2ygAHI5N4+ZAUXXaSeeJm6+twsUmIen'
-     * @param array                      $repositoryMapping e.g. [Repository::AUTH_CODE => 'MyPlugin.MyTable', ...]
+     * @param string                     $encryptionKey e.g. 'lxZFUEsBCJ2Yb14IF2ygAHI5N4+ZAUXXaSeeJm6+twsUmIen'
+     * @param LocatorInterface           $repositories  e.g. [Repository::AUTH_CODE => 'MyPlugin.MyTable', ...]
      * @param ResponseTypeInterface|null $responseType
      * @return void
      */
     public static function authorizationServer(
         CryptKey $privateKey,
         string $encryptionKey,
-        array $repositoryMapping,
+        LocatorInterface $repositories,
         ResponseTypeInterface $responseType = null
     ): AuthorizationServer {
-        $repositories = static::repositories($repositoryMapping);
         return new AuthorizationServer(
-            $repositories[Repository::CLIENT],
-            $repositories[Repository::ACCESS_TOKEN],
-            $repositories[Repository::SCOPE],
+            $repositories->get(Repository::CLIENT),
+            $repositories->get(Repository::ACCESS_TOKEN),
+            $repositories->get(Repository::SCOPE),
             $privateKey,
             $encryptionKey,
             $responseType
@@ -228,19 +242,18 @@ class Factory
      * Get OAuth 2.0 resource server with the given public key
      *
      * @param CryptKey                             $publicKey
-     * @param array                                $repositoryMapping
+     * @param LocatorInterface                     $repositories
      * @param AuthorizationValidatorInterface|null $authorizationValidator
      * @return ResourceServer
      * @throws Exception
      */
     public static function resourceServer(
         CryptKey $publicKey,
-        array $repositoryMapping,
+        LocatorInterface $repositories,
         ?AuthorizationValidatorInterface $authorizationValidator = null
     ): ResourceServer {
-        $repositories = static::repositories($repositoryMapping);
         return new ResourceServer(
-            $repositories[Repository::ACCESS_TOKEN],
+            $repositories->get(Repository::ACCESS_TOKEN),
             $publicKey,
             $authorizationValidator
         );

@@ -29,6 +29,9 @@ return [
             \OAuthServer\Lib\Enum\GrantType::CLIENT_CREDENTIALS,
             \OAuthServer\Lib\Enum\GrantType::AUTHORIZATION_CODE,
         ],
+        'extensions'            => [
+            \OAuthServer\Lib\Enum\Extension::OPENID_CONNECT,
+        ],
         'defaultScope'          => '',
     ],
 ];
