@@ -72,6 +72,13 @@ Load using `Configure::load('yourconfigname')` in your application's `bootstrap.
 Finally the database migrations need to be run:
 ```bash
 $ bin/cake migrations migrate --plugin OAuthServer
+
+```
+### Seeds
+Optionally the OpenID Connect id_token scope and claimset scopes seed can be run by:
+
+```bash
+$ bin/cake migrations seed --plugin=OAuthServer --seed=OpenIDConnectScopesSeed
 ```
 
 ## Implementation
