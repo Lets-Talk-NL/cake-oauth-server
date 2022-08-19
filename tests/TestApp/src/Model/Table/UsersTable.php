@@ -36,6 +36,7 @@ class UsersTable extends Table implements UserRepositoryInterface, IdentityProvi
      * @inheritDoc
      *
      * @return ClaimSetInterface|UserEntityInterface|null
+     * @link https://openid.net/specs/openid-connect-core-1_0.html#ScopeClaims
      */
     public function getUserEntityByIdentifier($identifier)
     {
