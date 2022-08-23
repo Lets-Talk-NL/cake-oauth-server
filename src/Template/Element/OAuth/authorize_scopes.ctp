@@ -7,12 +7,10 @@ use OAuthServer\Lib\Data\Entity\Scope as ScopeData;
 ?>
 <ul>
     <?php foreach ($authRequest->getScopes() as $scope): ?>
-        <li>
-            <?php if ($scope instanceof ScopeData && $scope->getDescription()): ?>
-                <?= $scope->getDescription() ?>
-            <?php else: ?>
-                <?= $scope->getIdentifier() ?>
-            <?php endif; ?>
-        </li>
+        <?php if ($scope instanceof ScopeData && $scope->getDescription()): ?>
+            <li>
+                <?= $scope->getDescription() // only show scope to user if there is a description  ?>
+            </li>
+        <?php endif; ?>
     <?php endforeach; ?>
 </ul>
