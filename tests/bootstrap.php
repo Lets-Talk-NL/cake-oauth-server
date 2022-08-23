@@ -102,4 +102,3 @@ if (!getenv('db_dsn')) {
 \Cake\Core\Plugin::load('Migrations');
 \Cake\Core\Plugin::load('OAuthServer', ['bootstrap' => true, 'routes' => true]);
 \Cake\Core\Plugin::routes('OAuthServer');
-

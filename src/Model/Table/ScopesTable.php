@@ -35,7 +35,7 @@ class ScopesTable extends Table implements ScopeRepositoryInterface
     {
         parent::initialize($config);
         $this->table('oauth_scopes');
-        $this->setPrimaryKey('id'); // @TODO Update after running migrations?
+        $this->setPrimaryKey('id');
         $this->setEntityClass('OAuthServer.Scope');
         $this->hasMany('AccessTokenScopes', [
             'className' => 'OAuthServer.AccessTokenScopes',

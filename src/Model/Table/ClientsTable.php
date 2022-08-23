@@ -29,7 +29,7 @@ class ClientsTable extends Table implements ClientRepositoryInterface
         parent::initialize($config);
         $this->table('oauth_clients');
         $this->setEntityClass('OAuthServer.Client');
-        $this->primaryKey('id'); // @TODO Update after running migrations?
+        $this->primaryKey('id');
         $this->displayField('name');
     }
 

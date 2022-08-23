@@ -6,7 +6,6 @@ use Cake\TestSuite\TestCase;
 use OAuthServer\Controller\Component\OAuthComponent;
 use OAuthServer\Controller\OAuthController;
 use OAuthServer\Lib\Data\Entity\AccessToken;
-use OAuthServer\Lib\Data\Entity\Scope;
 use OAuthServer\Lib\Data\Entity\User;
 use OAuthServer\Lib\Enum\Repository;
 use OAuthServer\Model\Table\ClientsTable;

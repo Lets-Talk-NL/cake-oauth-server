@@ -6,11 +6,11 @@ use Cake\Datasource\EntityInterface;
 use Cake\ORM\Association\HasMany;
 use Cake\ORM\Table;
 use League\OAuth2\Server\Entities\AuthCodeEntityInterface;
+use League\OAuth2\Server\Entities\ScopeEntityInterface;
 use League\OAuth2\Server\Repositories\AuthCodeRepositoryInterface;
 use OAuthServer\Model\Entity\AuthCode;
 use OAuthServer\Lib\Data\Entity\AuthCode as AuthCodeData;
 use function Functional\map;
-use League\OAuth2\Server\Entities\ScopeEntityInterface;
 
 /**
  * OAuth 2.0 authorisation codes table
@@ -34,11 +34,13 @@ class AuthCodesTable extends Table implements AuthCodeRepositoryInterface
         parent::initialize($config);
         $this->table('oauth_auth_codes');
         $this->setEntityClass('OAuthServer.AuthCode');
-        $this->primaryKey('code'); // @TODO Update after running migrations?
+        $this->primaryKey('code');
         $this->hasMany('AuthCodeScopes', [
-            'className'  => 'OAuthServer.AuthCodeScopes',
-            'foreignKey' => 'auth_code',
-            'dependant'  => true,
+            'className'        => 'OAuthServer.AuthCodeScopes',
+            'foreignKey'       => 'auth_code',
+            'saveStrategy'     => 'replace',
+            'dependent'        => true,
+            'cascadeCallbacks' => true,
         ]);
     }
 

@@ -1,9 +1,13 @@
 <?php
 
 use Cake\Routing\Router;
-use Cake\Routing\RouteBuilder;
 
+Router::connect('/users/login', [
+    'controller' => 'Users',
+    'action'     => 'login',
+]);
 
-Router::plugin('OAuthServer', ['path' => '/users'], function (RouteBuilder $routes) {
-    $routes->connect('/login', ['controller' => 'Users', 'action' => 'login']);
-});
+Router::connect('/api/:action', [
+    'controller' => 'Resources',
+    'action'     => ':action',
+]);

@@ -6,6 +6,7 @@ use Cake\Datasource\EntityInterface;
 use Cake\I18n\Time;
 use Cake\ORM\Association\HasMany;
 use Cake\ORM\Table;
+use Cake\ORM\Query;
 use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 use League\OAuth2\Server\Entities\ScopeEntityInterface;
@@ -15,7 +16,6 @@ use OAuthServer\Lib\Data\Entity\AccessToken as AccessTokenData;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use function Functional\map;
 use Exception;
-use Cake\ORM\Query;
 
 /**
  * OAuth 2.0 access tokens table
@@ -39,11 +39,13 @@ class AccessTokensTable extends Table implements AccessTokenRepositoryInterface
         parent::initialize($config);
         $this->table('oauth_access_tokens');
         $this->setEntityClass('OAuthServer.AccessToken');
-        $this->primaryKey('oauth_token'); // @TODO Update after running migrations?
+        $this->primaryKey('oauth_token');
         $this->hasMany('AccessTokenScopes', [
-            'className'  => 'OAuthServer.AccessTokenScopes',
-            'foreignKey' => 'oauth_token',
-            'dependant'  => true,
+            'className'        => 'OAuthServer.AccessTokenScopes',
+            'foreignKey'       => 'oauth_token',
+            'saveStrategy'     => 'replace',
+            'dependent'        => true,
+            'cascadeCallbacks' => true,
         ]);
     }
 

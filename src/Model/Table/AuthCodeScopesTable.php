@@ -29,7 +29,7 @@ class AuthCodeScopesTable extends Table
     {
         parent::initialize($config);
         $this->table('oauth_auth_code_scopes');
-        $this->setPrimaryKey('auth_code'); // @TODO Update after running migrations?
+        $this->setPrimaryKey('id');
         $this->setEntityClass('OAuthServer.AuthCodeScope');
         $this->belongsTo('AuthCodes', [
             'className'    => 'OAuthServer.AuthCodes',

@@ -29,7 +29,7 @@ class AccessTokenScopesTable extends Table
     {
         parent::initialize($config);
         $this->table('oauth_access_token_scopes');
-        $this->setPrimaryKey('oauth_token'); // @TODO Update after running migrations?
+        $this->setPrimaryKey('id');
         $this->setEntityClass('OAuthServer.AccessTokenScope');
         $this->belongsTo('AccessTokens', [
             'className'  => 'OAuthServer.AccessTokens',

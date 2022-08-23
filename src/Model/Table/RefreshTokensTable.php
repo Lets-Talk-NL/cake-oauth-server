@@ -3,6 +3,7 @@
 namespace OAuthServer\Model\Table;
 
 use Cake\Datasource\EntityInterface;
+use Cake\I18n\Time;
 use Cake\ORM\Association\BelongsTo;
 use Cake\ORM\Table;
 use League\OAuth2\Server\Entities\RefreshTokenEntityInterface;
@@ -32,7 +33,7 @@ class RefreshTokensTable extends Table implements RefreshTokenRepositoryInterfac
         parent::initialize($config);
         $this->table('oauth_refresh_tokens');
         $this->setEntityClass('OAuthServer.RefreshToken');
-        $this->primaryKey('refresh_token'); // @TODO Update after running migrations?
+        $this->primaryKey('refresh_token');
         $this->belongsTo('AccessTokens', [
             'className'  => 'OAuthServer.AccessTokens',
             'foreignKey' => 'oauth_token',
@@ -79,6 +80,7 @@ class RefreshTokensTable extends Table implements RefreshTokenRepositoryInterfac
             ->find()
             ->where([
                 $this->getPrimaryKey() => $tokenId,
+                'expires >'            => Time::now()->getTimestamp(),
             ])
             ->count();
     }

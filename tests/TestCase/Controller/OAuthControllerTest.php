@@ -96,7 +96,7 @@ class OAuthControllerTest extends IntegrationTestCase
         $_GET         = ['client_id' => 'TEST', 'redirect_uri' => 'http://www.example.com', 'response_type' => 'code', 'scope' => 'test'];
         $authorizeUrl = $this->url('/oauth/authorize') . '?' . http_build_query($_GET);
         $this->get($authorizeUrl);
-        $this->assertRedirect(['controller' => 'Users', 'action' => 'login', '?' => ['redirect' => $authorizeUrl]]);
+        $this->assertRedirect(['controller' => 'Users', 'action' => 'login', 'plugin' => null, '?' => ['redirect' => $authorizeUrl]]);
     }
 
     /**
@@ -115,7 +115,8 @@ class OAuthControllerTest extends IntegrationTestCase
         $this->assertResponseCode(200);
         $this->post($authorizeUrl, ['authorization' => 'Approve']);
         $this->assertResponseCode(302);
-        $location = $this->_response->getHeaderLine('Location');
+        $this->_session = [];
+        $location       = $this->_response->getHeaderLine('Location');
         $this->assertInternalType('string', $location);
         $prefix = $redirectUri . '?code=';
         $this->assertTextStartsWith($prefix, $location);
@@ -131,6 +132,67 @@ class OAuthControllerTest extends IntegrationTestCase
             'scope'         => $scope,
         ]);
         $this->assertResponseContains('"id_token":');
+    }
+
+    /**
+     * @return void
+     */
+    public function testAuthorizationCodeRefreshToken(): void
+    {
+        $this->session(['Auth.User.id' => 4]);
+
+        $scope       = 'openid email';
+        $redirectUri = 'http://www.example.com';
+        $query       = ['client_id' => 'TEST', 'redirect_uri' => $redirectUri, 'response_type' => 'code', 'scope' => $scope];
+
+        $authorizeUrl = $this->url('/oauth/authorize') . '?' . http_build_query($query);
+        $this->get($authorizeUrl);
+        $this->assertResponseCode(200);
+        $this->post($authorizeUrl, ['authorization' => 'Approve']);
+        $this->assertResponseCode(302);
+        $location = $this->_response->getHeaderLine('Location');
+        $this->assertInternalType('string', $location);
+        $prefix = $redirectUri . '?code=';
+        $this->assertTextStartsWith($prefix, $location);
+        $code                 = substr($location, strlen($prefix));
+        $this->_session       = [];
+        $_SERVER['HTTP_HOST'] = 'www.example.com';
+        $accessTokenUrl       = $this->url('/oauth/access_token', 'json');
+        $this->post($accessTokenUrl, [
+            'grant_type'    => 'authorization_code',
+            'client_id'     => 'TEST',
+            'client_secret' => 'TestSecret',
+            'redirect_uri'  => $redirectUri,
+            'code'          => $code,
+            'scope'         => $scope,
+        ]);
+        $this->assertResponseContains('"refresh_token":');
+        $this->_response->getBody()->rewind();
+        $body           = $this->_response->getBody()->getContents();
+        $body           = json_decode($body, JSON_OBJECT_AS_ARRAY);
+        $refreshToken   = $body['refresh_token'];
+        $accessTokenUrl = $this->url('/oauth/access_token', 'json');
+        $this->post($accessTokenUrl, [
+            'grant_type'    => 'refresh_token',
+            'refresh_token' => $refreshToken,
+            'client_id'     => 'TEST',
+            'client_secret' => 'TestSecret',
+            'scope'         => $scope,
+        ]);
+        $this->assertResponseContains('"refresh_token":');
+        $this->assertResponseContains('"access_token":');
+        $this->assertResponseContains('"id_token":');
+        $this->_response->getBody()->rewind();
+        $body                      = $this->_response->getBody()->getContents();
+        $body                      = json_decode($body, JSON_OBJECT_AS_ARRAY);
+        $accessToken               = $body['access_token'];
+        $this->_request['headers'] = ['Authorization' => $accessToken];
+        $this->get([
+            'controller' => 'Resources',
+            'action'     => 'someResourceEndpoint',
+            'plugin'     => null,
+        ]);
+        $this->assertResponseCode(200);
     }
 
     /**
