@@ -13,6 +13,7 @@ use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
 use OAuthServer\Model\Entity\Scope;
 use OAuthServer\Plugin;
 use function Functional\map;
+use Exception;
 
 /**
  * OAuth 2.0 scopes table
@@ -65,8 +66,17 @@ class ScopesTable extends Table implements ScopeRepositoryInterface
      */
     protected function dispatchFinalizeScopesEvent(array $data): Event
     {
-        $event = new Event('OAuthServer.finalizeScopes', $this, $data);
-        return Plugin::instance()->getEventManager()->dispatch($event);
+        try {
+            $event = new Event('OAuthServer.finalizeScopes', $this, $data);
+            return Plugin::instance()->getEventManager()->dispatch($event);
+        } catch (Exception $e) {
+            if ($e instanceof OAuthServerException) {
+                throw $e;
+            }
+            $hint = 'An event handler of event "%s" has thrown an exception of type "%s" with message "%s"';
+            $hint = sprintf($hint, $event->getName(), get_class($e), $e->getMessage());
+            throw new OAuthServerException('The server has failed to handle the request', 1001, 'server_error', 500, $hint, null, $e);
+        }
     }
 
     /**
@@ -82,7 +92,7 @@ class ScopesTable extends Table implements ScopeRepositoryInterface
         if (!is_array($scopes)) {
             $hint = 'An event handler of event "%s" has mutated scopes event data to something other than an array';
             $hint = sprintf($hint, $event->getName());
-            throw new OAuthServerException('The server has failed to handle the request', 1001, 'server_error', 500, $hint);
+            throw new OAuthServerException('The server has failed to handle the request', 1002, 'server_error', 500, $hint);
         }
     }
 
