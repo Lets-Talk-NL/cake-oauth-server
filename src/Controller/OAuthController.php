@@ -107,7 +107,7 @@ class OAuthController extends AppController
             $authRequest->setUser($user);
         }
 
-        $eventManager = EventManager::instance();
+        $eventManager = Plugin::instance()->getEventManager();
         $eventManager->dispatch(new Event('OAuthServer.beforeAuthorize', $this));
 
         try {

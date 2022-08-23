@@ -5,6 +5,8 @@ namespace OAuthServer;
 use Cake\Core\Plugin as CakePlugin;
 use Cake\Core\BasePlugin;
 use Cake\Core\Configure;
+use Cake\Event\EventDispatcherInterface;
+use Cake\Event\EventDispatcherTrait;
 use Cake\ORM\Locator\LocatorAwareTrait;
 use League\Event\EmitterAwareTrait;
 use League\OAuth2\Server\AuthorizationServer;
@@ -29,11 +31,12 @@ use function Functional\map;
  *
  * May construct more centrally plugin configured objects
  */
-class Plugin extends BasePlugin
+class Plugin extends BasePlugin implements EventDispatcherInterface
 {
     use EmitterAwareTrait;
     use LocatorAwareTrait;
     use RepositoryAwareTrait;
+    use EventDispatcherTrait;
 
     /**
      * @inheritdoc

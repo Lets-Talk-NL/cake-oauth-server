@@ -2,12 +2,14 @@
 
 namespace OAuthServer\Test\TestCase\Controller;
 
+use Cake\Event\EventList;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\IntegrationTestCase;
 use OAuthServer\Controller\OAuthController;
 use App\Controller\TestAppController;
 use App\Model\Table\UsersTable;
 use Cake\Core\Configure;
+use OAuthServer\Plugin;
 
 class OAuthControllerTest extends IntegrationTestCase
 {
@@ -139,6 +141,10 @@ class OAuthControllerTest extends IntegrationTestCase
      */
     public function testAuthorizationCodeRefreshToken(): void
     {
+        $eventDispatcher = Plugin::instance()->getEventManager();
+        $eventDispatcher->trackEvents(true);
+        $eventDispatcher->setEventList(new EventList());
+
         $this->session(['Auth.User.id' => 4]);
 
         $scope       = 'openid email';
@@ -193,6 +199,9 @@ class OAuthControllerTest extends IntegrationTestCase
             'plugin'     => null,
         ]);
         $this->assertResponseCode(200);
+        $this->assertEventFired('OAuthServer.beforeAuthorize', $eventDispatcher);
+        $this->assertEventFired('OAuthServer.afterAuthorize', $eventDispatcher);
+        $this->assertEventFired('OAuthServer.finalizeScopes', $eventDispatcher);
     }
 
     /**

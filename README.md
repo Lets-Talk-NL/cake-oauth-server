@@ -154,6 +154,8 @@ NOTE: If OpenID is enabled make sure the associated scopes are available and val
 - Check throws of OAuthServerExceptions to map to proper HTTP status codes when calling bare oauth endpoints.
 ***
 ## Events
+- `league/oauth2-server` events dispatched through `Plugin::getEmitter()`.
+- Plugin events (documented below) dispatched through `Plugin::instance()->getEventManager()`.
 ***
 #### `OAuthServer.beforeAuthorize`
 Triggered on every /oauth/authorize call.

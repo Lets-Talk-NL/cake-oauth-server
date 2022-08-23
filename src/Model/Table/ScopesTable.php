@@ -11,6 +11,7 @@ use League\OAuth2\Server\Entities\ScopeEntityInterface;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
 use OAuthServer\Model\Entity\Scope;
+use OAuthServer\Plugin;
 use function Functional\map;
 
 /**
@@ -65,8 +66,7 @@ class ScopesTable extends Table implements ScopeRepositoryInterface
     protected function dispatchFinalizeScopesEvent(array $data): Event
     {
         $event = new Event('OAuthServer.finalizeScopes', $this, $data);
-        $this->getEventManager()->dispatch($event);
-        return $event;
+        return Plugin::instance()->getEventManager()->dispatch($event);
     }
 
     /**
