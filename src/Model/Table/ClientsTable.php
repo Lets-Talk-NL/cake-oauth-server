@@ -52,7 +52,7 @@ class ClientsTable extends Table implements ClientRepositoryInterface
     public function getClientEntity($clientIdentifier)
     {
         /** @var Client $client */
-        if ($client = $this->find()->where([$this->getPrimaryKey() => $clientIdentifier])->first()) {
+        if ($client = $this->find()->where([$this->aliasField($this->getPrimaryKey()) => $clientIdentifier])->first()) {
             return $client->transformToDTO();
         }
         return null;
@@ -69,7 +69,7 @@ class ClientsTable extends Table implements ClientRepositoryInterface
             return false;
         }
         /** @var Client $entity */
-        if (!$entity = $this->find()->where([$this->getPrimaryKey() => $clientIdentifier])->first()) {
+        if (!$entity = $this->find()->where([$this->aliasField($this->getPrimaryKey()) => $clientIdentifier])->first()) {
             return false;
         }
         if ($entity->client_secret !== $clientSecret) {

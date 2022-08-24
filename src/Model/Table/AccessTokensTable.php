@@ -98,7 +98,7 @@ class AccessTokensTable extends Table implements AccessTokenRepositoryInterface
     {
         return !$this
             ->find()
-            ->where([$this->getPrimaryKey() => $tokenId])
+            ->where([$this->aliasField($this->getPrimaryKey()) => $tokenId])
             ->count();
     }
 
@@ -120,6 +120,6 @@ class AccessTokensTable extends Table implements AccessTokenRepositoryInterface
         $optionsResolver->setAllowedTypes('user_id', ['string', 'null']);
         $options = $optionsResolver->resolve($options);
         // not checking refresh tokens depending on the extent of activity required may be added later
-        return $query->where(['expires >' => Time::now()->getTimestamp()] + $options);
+        return $query->where([$this->aliasField('expires') . ' >' => Time::now()->getTimestamp()] + $options);
     }
 }

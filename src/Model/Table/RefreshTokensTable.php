@@ -79,8 +79,8 @@ class RefreshTokensTable extends Table implements RefreshTokenRepositoryInterfac
         return !$this
             ->find()
             ->where([
-                $this->getPrimaryKey() => $tokenId,
-                'expires >'            => Time::now()->getTimestamp(),
+                $this->aliasField($this->getPrimaryKey()) => $tokenId,
+                $this->aliasField('expires') . ' >'       => Time::now()->getTimestamp(),
             ])
             ->count();
     }

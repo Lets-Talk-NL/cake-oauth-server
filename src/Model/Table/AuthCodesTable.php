@@ -88,7 +88,7 @@ class AuthCodesTable extends Table implements AuthCodeRepositoryInterface
     {
         return !$this
             ->find()
-            ->where([$this->getPrimaryKey() => $codeId])
+            ->where([$this->aliasField($this->getPrimaryKey()) => $codeId])
             ->count();
     }
 }

@@ -52,7 +52,7 @@ class ScopesTable extends Table implements ScopeRepositoryInterface
      */
     public function getScopeEntityByIdentifier($identifier)
     {
-        if ($scope = $this->find()->where([$this->getPrimaryKey() => $identifier])->first()) {
+        if ($scope = $this->find()->where([$this->aliasField($this->getPrimaryKey()) => $identifier])->first()) {
             return $scope->transformToDTO();
         }
         return null;
@@ -110,7 +110,7 @@ class ScopesTable extends Table implements ScopeRepositoryInterface
         /** @var Scope[] $dbEntities */
         $dbEntities = $this
             ->find()
-            ->whereInList($this->getPrimaryKey(), $scopes, ['allowEmpty' => true])
+            ->whereInList($this->aliasField($this->getPrimaryKey()), $scopes, ['allowEmpty' => true])
             ->all()
             ->toArray();
 
