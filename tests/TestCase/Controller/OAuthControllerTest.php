@@ -110,7 +110,11 @@ class OAuthControllerTest extends IntegrationTestCase
 
         $scope       = 'openid email';
         $redirectUri = 'http://www.example.com';
-        $query       = ['client_id' => 'TEST', 'redirect_uri' => $redirectUri, 'response_type' => 'code', 'scope' => $scope];
+        $csrf        = 'randomstring';
+        $query       = [
+            'client_id' => 'TEST', 'redirect_uri' => $redirectUri, 'response_type' => 'code', 'scope' => $scope,
+            'state'     => $csrf,
+        ];
 
         $authorizeUrl = $this->url('/oauth/authorize') . '?' . http_build_query($query);
         $this->get($authorizeUrl);
@@ -122,7 +126,8 @@ class OAuthControllerTest extends IntegrationTestCase
         $this->assertInternalType('string', $location);
         $prefix = $redirectUri . '?code=';
         $this->assertTextStartsWith($prefix, $location);
-        $code                 = substr($location, strlen($prefix));
+        $this->assertTextEndsWith('state=' . $csrf, $location);
+        $code                 = substr($location, strlen($prefix), strlen($location) - strlen($prefix) - strlen('&state=' . $csrf));
         $_SERVER['HTTP_HOST'] = 'www.example.com';
         $accessTokenUrl       = $this->url('/oauth/access_token', 'json');
         $this->post($accessTokenUrl, [
@@ -133,6 +138,7 @@ class OAuthControllerTest extends IntegrationTestCase
             'code'          => $code,
             'scope'         => $scope,
         ]);
+        $this->assertResponseCode(200);
         $this->assertResponseContains('"id_token":');
     }
 
