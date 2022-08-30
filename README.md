@@ -12,6 +12,8 @@ Requires the 'openid' scope and extension configuration value in `OAuthServer.ex
 
 NOTE: Configure the required `Repository::IDENTITY` repository anyway in `AuthServer.repositories`.
 It won't be used if the extension is not enabled.
+
+See corresponding seed for built-in scopes.
 ***
 ### Unit and integration tests
 Run using `composer install` and `composer test`
@@ -174,7 +176,7 @@ Triggered when finalizing scopes which is during completion of an auth request o
 (depends on default Scopes table)
 ***
 #### `OAuthServer.validateClient`
-Triggered during an access token request (the client may already have been acquired during an auth code request depending on the grant type used).
+Triggered during an access token request (the client may already have been acquired during an auth code request depending on the grant type used so its not just for the access token endpoint).
 
 `[$clientIdentifier, $clientSecret, $grantType]`
 
