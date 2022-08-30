@@ -1,26 +1,29 @@
 <?php
-/**
- * @copyright Martinus.sk
- * @author Jan Sukenik
- * @since 13. 2. 2017
- */
 
 namespace OAuthServer\Test\Fixture;
 
-use Cake\TestSuite\Fixture\TestFixture;
-
-class ScopesFixture extends TestFixture
+/**
+ * @inheritDoc
+ */
+class ScopesFixture extends AbstractMigrationsTestFixture
 {
-    public $table = 'oauth_scopes';
-    public $fields = [
-        'id' => ['type' => 'string'],
-        'description' => ['type' => 'string'],
-        '_constraints' => [
-            'primary' => ['type' => 'primary', 'columns' => ['id']]
-        ]
+    /**
+     * @inheritDoc
+     */
+    public $import = [
+        'connection' => 'test_migrations',
+        'model'      => 'OAuthServer.Scopes',
     ];
 
+    /**
+     * @inheritDoc
+     */
     public $records = [
-        ['id' => 'test', 'description' => '']
+        ['id' => 'test', 'description' => 'Default scope'],
+        ['id' => 'openid', 'description' => ''],
+        ['id' => 'profile', 'description' => ''],
+        ['id' => 'email', 'description' => ''],
+        ['id' => 'address', 'description' => ''],
+        ['id' => 'phone', 'description' => ''],
     ];
 }

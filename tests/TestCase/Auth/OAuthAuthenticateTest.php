@@ -1,4 +1,5 @@
 <?php
+
 namespace OAuthServer\Test\TestCase\Auth;
 
 use Cake\Controller\ComponentRegistry;
@@ -10,26 +11,24 @@ use OAuthServer\Auth\OAuthAuthenticate;
 
 class OAuthAuthenticateTest extends TestCase
 {
-
     /**
-     * setup
-     *
-     * @return void
+     * @inheritDoc
      */
     public function setUp()
     {
         parent::setUp();
         $this->Collection = $this->getMockBuilder(ComponentRegistry::class)->getMock();
-        $this->auth = new OAuthAuthenticate($this->Collection, [
-            'userModel' => 'Users'
-        ]);
+        $this->auth       = new OAuthAuthenticate($this->Collection, []);
         TableRegistry::clear();
         $this->response = $this->getMockBuilder(Response::class)->getMock();
     }
 
-    public function testAuthenticate()
+    /**
+     * @return void
+     */
+    public function testAuthenticate(): void
     {
-        $request = new Request('posts/index');
+        $request       = new Request('posts/index');
         $request->data = [];
         $this->assertFalse($this->auth->authenticate($request, $this->response));
     }

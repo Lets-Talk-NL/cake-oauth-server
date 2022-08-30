@@ -2,50 +2,87 @@
 
 namespace OAuthServer\Test\TestCase\Controller\Component;
 
-use Cake\Controller\ComponentRegistry;
 use Cake\TestSuite\TestCase;
-use League\OAuth2\Server\Grant\RefreshTokenGrant;
 use OAuthServer\Controller\Component\OAuthComponent;
+use OAuthServer\Controller\OAuthController;
+use OAuthServer\Lib\Data\Entity\AccessToken;
+use OAuthServer\Lib\Data\Entity\User;
+use OAuthServer\Lib\Enum\Repository;
+use OAuthServer\Model\Table\ClientsTable;
+use DateTimeImmutable;
+use OAuthServer\Plugin;
 
 class OAuthComponentTest extends TestCase
 {
-    public function testDefaultTokenTTL()
-    {
-        $component = new OAuthComponent(new ComponentRegistry(), []);
-        $this->assertEquals(3600, $component->Server->getAccessTokenTTL());
-    }
+    /**
+     * @inheritDoc
+     */
+    public $fixtures = [
+        'plugin.OAuthServer.Clients',
+        'plugin.OAuthServer.Users',
+        'plugin.OAuthServer.Scopes',
+        'plugin.OAuthServer.AccessTokens',
+        'plugin.OAuthServer.AccessTokenScopes',
+    ];
 
-    public function testConfigTokenTTL()
+    /**
+     * @var OAuthComponent
+     */
+    protected OAuthComponent $component;
+
+    /**
+     * @var ClientsTable
+     */
+    protected ClientsTable $clientsTable;
+
+    /**
+     * @inheritDoc
+     */
+    public function setUp()
     {
-        $component = new OAuthComponent(new ComponentRegistry(), [
-            'accessTokenTTL' => 5
-        ]);
-        $this->assertEquals(5, $component->Server->getAccessTokenTTL());
+        parent::setUp();
+        $controller = new OAuthController();
+        $controller->initialize();
+        $this->component    = new OAuthComponent($controller->components());
+        $this->clientsTable = $this->component->loadRepository('Clients', Repository::CLIENT());
     }
 
     /**
-     * @expectedException \League\OAuth2\Server\Exception\InvalidGrantException
+     * @return void
      */
-    public function testGrantWhitelist()
+    public function testGetSessionUserId(): void
     {
-        $component = new OAuthComponent(new ComponentRegistry(), [
-            'supportedGrants' => ['AuthCode'],
-        ]);
-        $component->Server->getGrantType('refresh_token');
+        $this->assertNull($this->component->getSessionUserId());
+        $this->component->getController()->Auth->storage()->write(['id' => 5]);
+        $this->assertEquals(5, $this->component->getSessionUserId());
     }
 
-    public function testGrantConfig()
+    /**
+     * @return void
+     */
+    public function testGetSessionUserData(): void
     {
-        $component = new OAuthComponent(new ComponentRegistry(), [
-            'supportedGrants' => [
-                'RefreshToken' => [
-                    'refreshTokenTTL' => 4
-                ]
-            ],
-        ]);
+        $this->assertNull($this->component->getSessionUserData());
+        $this->component->getController()->Auth->storage()->write(['id' => 5]);
+        $this->assertInstanceOf(User::class, $this->component->getSessionUserData());
+    }
 
-    /** @var RefreshTokenGrant $grant */
-        $grant = $component->Server->getGrantType('refresh_token');
-        $this->assertEquals(4, $grant->getRefreshTokenTTL());
+    /**
+     * @return void
+     */
+    public function testHasActiveAccessTokens(): void
+    {
+        $clientId = 'TEST';
+        $userId   = 1;
+        $this->assertFalse($this->component->hasActiveAccessTokens($clientId, $userId));
+        $this->assertFalse($this->component->hasActiveAccessTokens($clientId));
+        $data = new AccessToken();
+        $data->setIdentifier('123');
+        $data->setClient($this->clientsTable->getClientEntity($clientId));
+        $data->setUserIdentifier(1);
+        $data->setPrivateKey(Plugin::instance()->getPrivateKey());
+        $data->setExpiryDateTime(new DateTimeImmutable('+1 day'));
+        $this->component->AccessTokens->persistNewAccessToken($data);
+        $this->assertTrue($this->component->hasActiveAccessTokens($clientId, $userId));
     }
 }

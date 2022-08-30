@@ -1,162 +1,183 @@
 <?php
+
 namespace OAuthServer\Controller;
 
 use Cake\Core\Configure;
 use Cake\Event\Event;
-use Cake\Event\EventManager;
-use Cake\I18n\Time;
-use Cake\Network\Exception\HttpException;
-use Cake\Network\Response;
-use Cake\ORM\Query;
-use League\OAuth2\Server\Exception\AccessDeniedException;
-use League\OAuth2\Server\Exception\OAuthException;
-use League\OAuth2\Server\Grant\AuthCodeGrant;
-use League\OAuth2\Server\Util\RedirectUri;
+use Cake\Http\Exception\NotFoundException;
+use Cake\Http\Response;
+use OAuthServer\Controller\Component\OAuthComponent;
+use OAuthServer\Exception\ServiceNotAvailableException;
+use OAuthServer\Plugin;
+use UnexpectedValueException;
+use League\OAuth2\Server\Exception\OAuthServerException;
+use Exception as PhpException;
+use RuntimeException;
 
 /**
- * Class OAuthController
+ * OAuth 2.0 process controller
  *
- * @property \OAuthServer\Controller\Component\OAuthComponent $OAuth
+ * Uses AppController alias in the current namespace
+ * from bootstrap and config OAuthServer.appController
+ *
+ * @property OAuthComponent $OAuth
  */
 class OAuthController extends AppController
 {
-    /** @var AuthCodeGrant|null */
-    private $authCodeGrant;
-
-    /** @var array|null */
-    private $authParams;
-
     /**
-     * @return void
+     * @inheritDoc
      */
     public function initialize()
     {
         parent::initialize();
-
-        $this->loadComponent('OAuthServer.OAuth', (array)Configure::read('OAuthServer'));
-        $this->loadComponent('RequestHandler');
+        $this->loadComponent('OAuthServer.OAuth');
     }
 
     /**
-     * @param \Cake\Event\Event $event Event object.
-     * @return void
+     * @inheritDoc
      */
     public function beforeFilter(Event $event)
     {
         parent::beforeFilter($event);
-
         if (!$this->components()->has('Auth')) {
-            throw new \RuntimeException("OAuthServer requires Auth component to be loaded and properly configured");
+            throw new RuntimeException('OAuthServer requires Auth component to be loaded and properly configured');
         }
-
-        $this->Auth->allow(['oauth', 'accessToken']);
+        $this->Auth->allow(['oauth', 'accessToken', 'status']);
         $this->Auth->deny(['authorize']);
-
-        if ($this->request->param('action') == 'authorize') {
-            // OAuth spec requires to check OAuth authorize params as a first thing, regardless of whether user is logged in or not.
-            // AuthComponent checks user after beforeFilter by default, this is the place to do it.
-            try {
-                $this->authCodeGrant = $this->OAuth->Server->getGrantType('authorization_code');
-                $this->authParams = $this->authCodeGrant->checkAuthorizeParams();
-            } catch (OAuthException $e) {
-                // ignoring $e->getHttpHeaders() for now
-                // it only sends WWW-Authenticate header in case of InvalidClientException
-                throw new HttpException($e->getMessage(), $e->httpStatusCode, $e);
-            }
-        }
     }
 
     /**
-     * @return void
+     * Index action handler
+     *
+     * @return Response
+     * @throws UnexpectedValueException
+     * @throws NotFoundException
      */
-    public function oauth()
+    public function index(): Response
     {
-        $this->redirect([
+        if (Configure::read('OAuthServer.serviceDisabled')) {
+            throw new ServiceNotAvailableException();
+        }
+        if (Configure::read('OAuthServer.indexRedirectDisabled')) {
+            throw new NotFoundException();
+        }
+        return $this->redirect([
             'action' => 'authorize',
-            '_ext' => $this->request->param('_ext'),
-            '?' => $this->request->query
+            '_ext'   => $this->request->param('_ext'),
+            '?'      => $this->request->query,
         ], 301);
     }
 
     /**
-     * @throws \League\OAuth2\Server\Exception\InvalidGrantException
-     * @return Response|null
+     * Authorize action handler
+     *
+     * @return Response
+     * @TODO JSON seems to be the standard, but improve content type handling?
+     * @TODO improve exception handling?
      */
-    public function authorize()
+    public function authorize(): Response
     {
-        $clientId = $this->request->query('client_id');
-        $ownerModel = $this->Auth->config('authenticate.all.userModel');
-        $ownerId = $this->Auth->user(Configure::read("OAuthServer.models.{$ownerModel}.id") ?: 'id');
-
-        $event = new Event('OAuthServer.beforeAuthorize', $this);
-        EventManager::instance()->dispatch($event);
-
-        $serializeKeys = [];
-        if (is_array($event->result)) {
-            $this->set($event->result);
-            $serializeKeys = array_keys($event->result);
-
-            if (isset($event->result['ownerId'])) {
-                $ownerId = $event->result['ownerId'];
-            }
-            if (isset($event->result['ownerModel'])) {
-                $ownerModel = $event->result['ownerModel'];
-            }
+        if (Configure::read('OAuthServer.serviceDisabled')) {
+            throw new ServiceNotAvailableException();
         }
 
-        $currentTokens = $this->loadModel('OAuthServer.AccessTokens')
-            ->find()
-            ->where(['expires > ' => Time::now()->getTimestamp()])
-            ->matching('Sessions', function (Query $q) use ($ownerModel, $ownerId, $clientId) {
-                return $q->where([
-                    'owner_model' => $ownerModel,
-                    'owner_id' => $ownerId,
-                    'client_id' => $clientId
-                ]);
-            })
-            ->count();
+        // Start authorization request
+        $authServer  = $this->OAuth->getAuthorizationServer();
+        $authRequest = $authServer->validateAuthorizationRequest($this->request);
+        $clientId    = $authRequest->getClient()->getIdentifier();
 
-        if ($currentTokens > 0 || ($this->request->is('post') && $this->request->data('authorization') === 'Approve')) {
-            $redirectUri = $this->authCodeGrant->newAuthorizeRequest($ownerModel, $ownerId, $this->authParams);
-
-            $event = new Event('OAuthServer.afterAuthorize', $this);
-            EventManager::instance()->dispatch($event);
-
-            return $this->redirect($redirectUri);
-        } elseif ($this->request->is('post')) {
-            $event = new Event('OAuthServer.afterDeny', $this);
-            EventManager::instance()->dispatch($event);
-
-            $error = new AccessDeniedException();
-
-            $redirectUri = RedirectUri::make($this->authParams['redirect_uri'], [
-                'error' => $error->errorType,
-                'message' => $error->getMessage()
-            ]);
-
-            return $this->redirect($redirectUri);
+        // 'redirect_uri' is considered an optional argument but grant implementations dont always
+        // seem to implement the fallback from the client. Set it anyway here
+        if ($authRequest->getRedirectUri() === null && ($authRequest->getClient() && $authRequest->getClient()->getRedirectUri())) {
+            $authRequest->setRedirectUri($authRequest->getClient()->getRedirectUri());
         }
 
-        $this->set('authParams', $this->authParams);
-        $this->set('user', $this->Auth->user());
-        $this->set('_serialize', array_merge(['user', 'authParams'], $serializeKeys));
+        // Once the user has logged in set the user on the AuthorizationRequest
+        if ($user = $this->OAuth->getSessionUserData()) {
+            $authRequest->setUser($user);
+        }
 
-        return null;
+        $eventManager = Plugin::instance()->getEventManager();
+        $eventManager->dispatch(new Event('OAuthServer.beforeAuthorize', $this));
+
+        try {
+            // immediately approve authorization request if already has active tokens
+            if ($this->OAuth->hasActiveAccessTokens($clientId, $user->getIdentifier())) {
+                $authRequest->setAuthorizationApproved(true);
+                $eventManager->dispatch(new Event('OAuthServer.afterAuthorize', $this));
+                // redirect
+                return $authServer->completeAuthorizationRequest($authRequest, $this->response);
+            }
+
+            // handle form posted UI confirmation of client authorization approval
+            if ($this->request->is('post')) {
+                $authRequest->setAuthorizationApproved(false);
+                if ($this->request->data('authorization') === 'Approve') {
+                    $authRequest->setAuthorizationApproved(true);
+                    $eventManager->dispatch(new Event('OAuthServer.afterAuthorize', $this));
+                } else {
+                    $eventManager->dispatch(new Event('OAuthServer.afterDeny', $this));
+                }
+                // redirect
+                return $authServer->completeAuthorizationRequest($authRequest, $this->response);
+            }
+        } catch (OAuthServerException $exception) {
+            // @TODO this is a JSON response ..?
+            return $exception->generateHttpResponse($this->response);
+        } catch (Exception $exception) {
+            $body = new Stream('php://temp', 'r+');
+            $body->write($exception->getMessage());
+            // @TODO this is a blank page with an exception message?
+            return $response->withStatus(500)->withBody($body);
+        }
+
+        $this->set('authRequest', $authRequest);
+        return $this->render();
     }
 
     /**
-     * @return void
+     * Access token action handler
+     *
+     * @return Response
+     * @TODO JSON seems to be the standard, but improve content type handling?
+     * @TODO improve exception handling?
      */
-    public function accessToken()
+    public function accessToken(): Response
     {
-        try {
-            $response = $this->OAuth->Server->issueAccessToken();
-            $this->set($response);
-            $this->set('_serialize', array_keys($response));
-        } catch (OAuthException $e) {
-            // ignoring $e->getHttpHeaders() for now
-            // it only sends WWW-Authenticate header in case of InvalidClientException
-            throw new HttpException($e->getMessage(), $e->httpStatusCode, $e);
+        if (Configure::read('OAuthServer.serviceDisabled')) {
+            throw new ServiceNotAvailableException();
         }
+        $request  = $this->request;
+        $response = $this->response;
+        try {
+            return $authServer->respondToAccessTokenRequest($request, $response);
+        } catch (OAuthServerException $exception) {
+            return $exception->generateHttpResponse($response);
+        } catch (PhpException $exception) {
+            return (new OAuthServerException($exception->getMessage(), 0, 'unknown_error', 500))
+                ->generateHttpResponse($response);
+        }
+        return $response;
+    }
+
+    /**
+     * Service status, documentation and operation parameters
+     *
+     * @return Response
+     * @TODO JSON seems to be the standard, but improve content type handling?
+     * @throws ServiceNotAvailableException
+     */
+    public function status(): Response
+    {
+        if (Configure::read('OAuthServer.statusDisabled')) {
+            throw new ServiceNotAvailableException();
+        }
+        if (!$this->request->is('json')) {
+            throw new NotFoundException();
+        }
+        $status = Plugin::instance()->getStatus();
+        return $this->getResponse()
+                    ->withType('json')
+                    ->withStringBody(json_encode($status));
     }
 }

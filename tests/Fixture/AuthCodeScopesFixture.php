@@ -2,17 +2,16 @@
 
 namespace OAuthServer\Test\Fixture;
 
-use Cake\TestSuite\Fixture\TestFixture;
-
-class AuthCodeScopesFixture extends TestFixture
+/**
+ * @inheritDoc
+ */
+class AuthCodeScopesFixture extends AbstractMigrationsTestFixture
 {
-    public $table = 'oauth_auth_code_scopes';
-    public $fields = [
-        'id' => ['type' => 'integer'],
-        'auth_code' => ['type' => 'string'],
-        'scope_id' => ['type' => 'string'],
-        '_constraints' => [
-            'primary' => ['type' => 'primary', 'columns' => ['id']]
-        ]
+    /**
+     * @inheritDoc
+     */
+    public $import = [
+        'connection' => 'test_migrations',
+        'model'      => 'OAuthServer.AuthCodeScopes',
     ];
 }

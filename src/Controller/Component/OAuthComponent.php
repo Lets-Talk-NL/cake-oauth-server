@@ -1,126 +1,104 @@
 <?php
+
 namespace OAuthServer\Controller\Component;
 
 use Cake\Controller\Component;
-use Cake\Core\App;
-use Cake\Network\Exception\NotImplementedException;
-use Cake\Utility\Inflector;
-use OAuthServer\Traits\GetStorageTrait;
+use Cake\Controller\Component\AuthComponent;
+use Cake\ORM\Table;
+use OAuthServer\Lib\Data\Entity\User as UserData;
+use OAuthServer\Lib\Enum\Repository;
+use OAuthServer\Lib\Traits\RepositoryAwareTrait;
+use OAuthServer\Model\Table\AccessTokensTable;
+use OAuthServer\Model\Table\ScopesTable;
+use OAuthServer\Plugin;
+use League\OAuth2\Server\AuthorizationServer;
+use LogicException;
 
+/**
+ * OAuth 2.0 server process controller helper component
+ *
+ * @property AccessTokensTable $AccessTokens
+ * @property Table             $Users
+ * @property ScopesTable       $Scopes
+ */
 class OAuthComponent extends Component
 {
-    use GetStorageTrait;
+    use RepositoryAwareTrait;
 
     /**
-     * @var \League\OAuth2\Server\AuthorizationServer
-     */
-    public $Server;
-
-    /**
-     * Grant types currently supported by the plugin
+     * OAuth 2.0 vendor authorization server object
      *
-     * @var array
+     * @var AuthorizationServer
      */
-    protected $_allowedGrants = ['AuthCode', 'RefreshToken', 'ClientCredentials', 'Password'];
+    protected AuthorizationServer $authorizationServer;
 
     /**
-     * @var array
-     */
-    protected $_defaultConfig = [
-        'supportedGrants' => ['AuthCode', 'RefreshToken', 'ClientCredentials', 'Password'],
-        'storages' => [
-            'session' => [
-                'className' => 'OAuthServer.Session'
-            ],
-            'accessToken' => [
-                'className' => 'OAuthServer.AccessToken'
-            ],
-            'client' => [
-                'className' => 'OAuthServer.Client'
-            ],
-            'scope' => [
-                'className' => 'OAuthServer.Scope'
-            ],
-            'authCode' => [
-                'className' => 'OAuthServer.AuthCode'
-            ],
-            'refreshToken' => [
-                'className' => 'OAuthServer.RefreshToken'
-            ]
-        ],
-        'authorizationServer' => [
-            'className' => 'League\OAuth2\Server\AuthorizationServer'
-        ]
-    ];
-
-    /**
-     * @return \League\OAuth2\Server\AuthorizationServer
-     */
-    protected function _getAuthorizationServer()
-    {
-        $serverConfig = $this->config('authorizationServer');
-        $serverClassName = App::className($serverConfig['className']);
-
-        return new $serverClassName();
-    }
-
-    /**
-     * @param array $config Config array
-     * @return void
+     * @inheritDoc
      */
     public function initialize(array $config)
     {
-        $server = $this->_getAuthorizationServer();
-        $server->setSessionStorage($this->_getStorage('session'));
-        $server->setAccessTokenStorage($this->_getStorage('accessToken'));
-        $server->setClientStorage($this->_getStorage('client'));
-        $server->setScopeStorage($this->_getStorage('scope'));
-        $server->setAuthCodeStorage($this->_getStorage('authCode'));
-        $server->setRefreshTokenStorage($this->_getStorage('refreshToken'));
+        parent::initialize($config);
+        $this->loadRepository('AccessTokens', Repository::ACCESS_TOKEN());
+        $this->loadRepository('Users', Repository::USER());
+        $this->loadRepository('Scopes', Repository::SCOPE());
+        $this->authorizationServer = Plugin::instance()->getAuthorizationServer();
+    }
 
-        $supportedGrants = isset($config['supportedGrants']) ? $config['supportedGrants'] : $this->config('supportedGrants');
-        $supportedGrants = $this->_registry->normalizeArray($supportedGrants);
-
-        foreach ($supportedGrants as $properties) {
-            $grant = $properties['class'];
-
-            if (!in_array($grant, $this->_allowedGrants)) {
-                throw new NotImplementedException(__('The {0} grant type is not supported by the OAuthServer'));
-            }
-
-            $className = '\\League\\OAuth2\\Server\\Grant\\' . $grant . 'Grant';
-            $objGrant = new $className();
-
-            if ($grant === 'Password') {
-                $objGrant->setVerifyCredentialsCallback(function ($username, $password) {
-                    $controller = $this->_registry->getController();
-                    $controller->Auth->constructAuthenticate();
-                    $userfield = $controller->Auth->_config['authenticate']['Form']['fields']['username'];
-                    $controller->request->data[$userfield] = $username;
-                    $controller->request->data['password'] = $password;
-                    $loginOk = $controller->Auth->identify();
-                    if ($loginOk) {
-                        return $loginOk['id'];
-                    } else {
-                        return false;
-                    }
-                });
-            }
-
-            foreach ($properties['config'] as $key => $value) {
-                $method = 'set' . Inflector::camelize($key);
-                if (is_callable([$objGrant, $method])) {
-                    $objGrant->$method($value);
+    /**
+     * Get the user id based on the current AuthComponent session
+     *
+     * @return string|null
+     * @throws LogicException
+     */
+    public function getSessionUserId(): ?string
+    {
+        $userId     = null;
+        $components = $this->getController()->components();
+        if ($components->has('Auth')) {
+            $component = $components->get('Auth');
+            if ($component instanceof AuthComponent) {
+                if (!method_exists($this->Users, 'getPrimaryKey')) {
+                    throw new LogicException('missing primary key retrieval method');
                 }
+                $userId = $component->user($this->Users->getPrimaryKey());
             }
-
-            $server->addGrantType($objGrant);
         }
+        return $userId;
+    }
 
-        if ($this->config('accessTokenTTL')) {
-            $server->setAccessTokenTTL($this->config('accessTokenTTL'));
+    /**
+     * Get the OAuth 2.0 server user DTO object based on the current user session
+     *
+     * @return UserData|null
+     */
+    public function getSessionUserData(): ?UserData
+    {
+        if ($userId = $this->getSessionUserId()) {
+            $data = new UserData();
+            $data->setIdentifier($userId);
+            return $data;
         }
+        return null;
+    }
 
-        $this->Server = $server;
+    /**
+     * Check if the current client+user has active access tokens
+     *
+     * @param string      $clientId
+     * @param string|null $userId
+     * @return bool True if active access tokens
+     */
+    public function hasActiveAccessTokens(string $clientId, ?string $userId = null): bool
+    {
+        $options = ['client_id' => $clientId, 'user_id' => $userId];
+        return !!$this->AccessTokens->find('active', $options)->count();
+    }
+
+    /**
+     * @return AuthorizationServer
+     */
+    public function getAuthorizationServer(): AuthorizationServer
+    {
+        return $this->authorizationServer;
     }
 }

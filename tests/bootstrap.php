@@ -1,71 +1,104 @@
 <?php
-use Cake\Core\Configure;
-use Cake\Core\Plugin;
-use Cake\Datasource\ConnectionManager;
 
-$findRoot = function ($root) {
-    do {
-        $lastRoot = $root;
-        $root = dirname($root);
-        if (is_dir($root . '/vendor/cakephp/cakephp')) {
-            return $root;
-        }
-    } while ($root !== $lastRoot);
-    throw new Exception('Cannot find the root of the application, unable to run tests');
-};
-$root = $findRoot(__FILE__);
-unset($findRoot);
-chdir($root);
-require_once 'vendor/cakephp/cakephp/src/basics.php';
-require_once 'vendor/autoload.php';
-define('ROOT', $root . DS . 'tests' . DS . 'test_app' . DS);
-define('APP', ROOT);
-define('CONFIG', $root . DS . 'config' . DS);
-define('TMP', sys_get_temp_dir() . DS);
+// Setup constants
+if (!defined('DS')) {
+    define('DS', DIRECTORY_SEPARATOR);
+}
+define('ROOT', dirname(__DIR__));
+define('APP_DIR', 'src');
+define('APP_ROOT', ROOT . DS . 'tests' . DS . 'TestApp' . DS);
+define('APP', APP_ROOT . APP_DIR . DS);
+define('CONFIG', APP_ROOT . DS . 'config' . DS);
+define('WWW_ROOT', APP . DS . 'webroot' . DS);
+define('TESTS', ROOT . DS . 'tests' . DS);
+define('TMP', APP_ROOT . DS . 'tmp' . DS);
+define('LOGS', APP_ROOT . DS . 'logs' . DS);
+define('CACHE', TMP . 'cache' . DS);
+define('CAKE_CORE_INCLUDE_PATH', ROOT . DS . 'vendor' . DS . 'cakephp' . DS . 'cakephp');
+define('CORE_PATH', CAKE_CORE_INCLUDE_PATH . DS);
+define('CAKE', CORE_PATH . 'src' . DS);
 
-$loader = new \Cake\Core\ClassLoader;
+// Run vendor autoloader
+require_once ROOT . DS . 'vendor' . DS . 'autoload.php';
+
+// Bootstrap CakePHP core library
+require_once CORE_PATH . 'config' . DS . 'bootstrap.php';
+
+// Setup test application namespace for the integration tests app that goes in ROOT/tests/test_app
+$loader = new \Cake\Core\ClassLoader();
 $loader->register();
-$loader->addNamespace('TestApp', APP);
+$loader->addNamespace('App', APP);
 
-Configure::write('debug', true);
-Configure::write('App', [
-    'namespace' => 'App',
-    'paths' => [
-        'plugins' => [ROOT . 'Plugin' . DS],
-        'templates' => [ROOT . 'Template' . DS]
-    ]
-]);
-Cake\Cache\Cache::config([
-    '_cake_core_' => [
-        'engine' => 'File',
-        'prefix' => 'cake_core_',
+// Setup TestApp application configuration
+$config = [
+    'debug'   => true,
+    'App'     => [
+        'namespace'     => 'App',
+        'encoding'      => 'UTF-8',
+        'defaultLocale' => 'en_US',
+        'base'          => false,
+        'baseUrl'       => false,
+        'dir'           => 'src',
+        'webroot'       => 'webroot',
+        'wwwRoot'       => WWW_ROOT,
+        'fullBaseUrl'   => 'http://localhost',
+        'imageBaseUrl'  => 'img/',
+        'cssBaseUrl'    => 'css/',
+        'jsBaseUrl'     => 'js/',
+        'paths'         => [
+            'plugins'   => [APP_ROOT . 'plugins' . DS],
+            'templates' => [APP . 'Template' . DS],
+            'locales'   => [APP . 'Locale' . DS],
+        ],
+    ],
+    'plugins' => [
+        'OAuthServer' => ROOT . DS,
+        'Migrations'  => ROOT . 'vendor' . DS . 'cakephp' . DS . 'migrations' . DS,
+    ],
+    'Error'   => [
+        'exceptionRenderer' => \App\Error\ExceptionRenderer::class,
+    ],
+];
+
+\Cake\Core\Configure::write($config);
+
+// setup test application cache
+Cake\Cache\Cache::setConfig([
+    '_cake_core_'  => [
+        'engine'    => 'File',
+        'prefix'    => 'cake_core_',
         'serialize' => true,
-        'path' => '/tmp',
+        'path'      => '/tmp',
     ],
     '_cake_model_' => [
-        'engine' => 'File',
-        'prefix' => 'cake_model_',
+        'engine'    => 'File',
+        'prefix'    => 'cake_model_',
         'serialize' => true,
-        'path' => '/tmp',
-    ]
+        'path'      => '/tmp',
+    ],
 ]);
+
+// Load plugin default configuration
+\Cake\Core\Configure::write(include ROOT . DS . 'config' . DS . 'plugin.default.php');
+
+// Set plugin OAuthController AppController alias to the controller from the test application
+\Cake\Core\Configure::write('OAuthServer.appController', 'App\Controller\TestAppController');
+
+// PHP settings
+error_reporting(E_ALL & ~E_USER_DEPRECATED);
+ini_set('intl.default_locale', \Cake\Core\Configure::read('App.defaultLocale'));
+mb_internal_encoding(\Cake\Core\Configure::read('App.encoding'));
+date_default_timezone_set('UTC');
+
+// Setup sqlite test database configuration
 if (!getenv('db_dsn')) {
     putenv('db_dsn=sqlite:///:memory:');
 }
-if (!getenv('DB')) {
-    putenv('DB=sqlite');
-}
+\Cake\Datasource\ConnectionManager::setConfig('test', ['url' => getenv('db_dsn')]);
+\Cake\Datasource\ConnectionManager::setConfig('test_migrations', ['url' => 'sqlite:///:memory:']);
+\Cake\Datasource\ConnectionManager::alias('test', 'default');
 
-ConnectionManager::config('test', ['url' => getenv('db_dsn')]);
-
-Configure::write('OAuthServer.appController', 'TestApp\Controller\TestAppController');
-
-require_once $root . DS . 'config' . DS . 'bootstrap.php';
-
-Plugin::load('OAuth', [
-    'path' => dirname(dirname(__FILE__)) . DS,
-]);
-Plugin::load('OAuthServer', ['path' => $root]);
-
-\Cake\Routing\DispatcherFactory::add('Routing');
-\Cake\Routing\DispatcherFactory::add('ControllerFactory');
+// Load test application plugins (including self load)
+\Cake\Core\Plugin::load('Migrations');
+\Cake\Core\Plugin::load('OAuthServer', ['bootstrap' => true, 'routes' => true]);
+\Cake\Core\Plugin::routes('OAuthServer');

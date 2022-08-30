@@ -1,45 +1,80 @@
 <?php
+
 namespace OAuthServer\Model\Table;
 
 use Cake\Event\Event;
 use Cake\ORM\Table;
+use Cake\Datasource\EntityInterface;
+use OAuthServer\Lib\Factory;
 use OAuthServer\Model\Entity\Client;
+use League\OAuth2\Server\Repositories\ClientRepositoryInterface;
 
 /**
- * Client Model
+ * OAuth 2.0 clients table
  *
- * @property AccessToken $AccessToken
- * @property AuthCode $AuthCode
- * @property RefreshToken $RefreshToken
+ * @method Client get($primaryKey, $options = [])
+ * @method Client newEntity($data = null, array $options = [])
+ * @method Client[] newEntities(array $data, array $options = [])
+ * @method Client|bool save(EntityInterface $entity, $options = [])
+ * @method Client patchEntity(EntityInterface $entity, array $data, array $options = [])
+ * @method Client[] patchEntities($entities, array $data, array $options = [])
  */
-class ClientsTable extends Table
+class ClientsTable extends Table implements ClientRepositoryInterface
 {
     /**
-     * @param array $config Config
-     * @return void
+     * @inheritDoc
      */
     public function initialize(array $config)
     {
+        parent::initialize($config);
         $this->table('oauth_clients');
+        $this->setEntityClass('OAuthServer.Client');
         $this->primaryKey('id');
         $this->displayField('name');
-        $this->hasMany('Sessions', [
-            'className' => 'OAuthServer.Sessions',
-            'foreignKey' => 'client_id'
-        ]);
-        parent::initialize($config);
     }
 
     /**
-     * @param \Cake\Event\Event $event Event object
-     * @param \OAuthServer\Model\Entity\Client $client Client entity
+     * @param Event  $event  Event object
+     * @param Client $client Client entity
      * @return void
      */
     public function beforeSave(Event $event, Client $client)
     {
         if ($client->isNew()) {
-            $client->id = base64_encode(uniqid() . substr(uniqid(), 11, 2));// e.g. NGYcZDRjODcxYzFkY2Rk (seems popular format)
-            $client->generateSecret();
+            $client->id            = Factory::clientId();
+            $client->client_secret = Factory::clientSecret();
         }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getClientEntity($clientIdentifier)
+    {
+        /** @var Client $client */
+        if ($client = $this->find()->where([$this->aliasField($this->getPrimaryKey()) => $clientIdentifier])->first()) {
+            return $client->transformToDTO();
+        }
+        return null;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function validateClient($clientIdentifier, $clientSecret, $grantType)
+    {
+        $event = new Event('OAuthServer.validateClient', $this, [$clientIdentifier, $clientSecret, $grantType]);
+        $this->getEventManager()->dispatch($event);
+        if ($event->isStopped()) {
+            return false;
+        }
+        /** @var Client $entity */
+        if (!$entity = $this->find()->where([$this->aliasField($this->getPrimaryKey()) => $clientIdentifier])->first()) {
+            return false;
+        }
+        if ($entity->client_secret !== $clientSecret) {
+            return false;
+        }
+        return true;
     }
 }
