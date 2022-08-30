@@ -5,15 +5,14 @@ namespace OAuthServer\Controller\Component;
 use Cake\Controller\Component;
 use Cake\Controller\Component\AuthComponent;
 use Cake\ORM\Table;
-use League\OAuth2\Server\Entities\ScopeEntityInterface;
-use OAuthServer\Lib\Data\Entity\Scope as ScopeData;
 use OAuthServer\Lib\Data\Entity\User as UserData;
 use OAuthServer\Lib\Enum\Repository;
 use OAuthServer\Lib\Traits\RepositoryAwareTrait;
 use OAuthServer\Model\Table\AccessTokensTable;
 use OAuthServer\Model\Table\ScopesTable;
+use OAuthServer\Plugin;
+use League\OAuth2\Server\AuthorizationServer;
 use LogicException;
-use function Functional\map;
 
 /**
  * OAuth 2.0 server process controller helper component
@@ -27,6 +26,13 @@ class OAuthComponent extends Component
     use RepositoryAwareTrait;
 
     /**
+     * OAuth 2.0 vendor authorization server object
+     *
+     * @var AuthorizationServer
+     */
+    protected AuthorizationServer $authorizationServer;
+
+    /**
      * @inheritDoc
      */
     public function initialize(array $config)
@@ -35,6 +41,7 @@ class OAuthComponent extends Component
         $this->loadRepository('AccessTokens', Repository::ACCESS_TOKEN());
         $this->loadRepository('Users', Repository::USER());
         $this->loadRepository('Scopes', Repository::SCOPE());
+        $this->authorizationServer = Plugin::instance()->getAuthorizationServer();
     }
 
     /**
@@ -85,5 +92,13 @@ class OAuthComponent extends Component
     {
         $options = ['client_id' => $clientId, 'user_id' => $userId];
         return !!$this->AccessTokens->find('active', $options)->count();
+    }
+
+    /**
+     * @return AuthorizationServer
+     */
+    public function getAuthorizationServer(): AuthorizationServer
+    {
+        return $this->authorizationServer;
     }
 }

@@ -4,15 +4,12 @@ namespace OAuthServer\Controller;
 
 use Cake\Core\Configure;
 use Cake\Event\Event;
-use Cake\Event\EventManager;
 use Cake\Http\Exception\NotFoundException;
 use Cake\Http\Response;
 use OAuthServer\Controller\Component\OAuthComponent;
 use OAuthServer\Exception\ServiceNotAvailableException;
-use OAuthServer\Lib\Enum\IndexMode;
 use OAuthServer\Plugin;
 use UnexpectedValueException;
-use League\OAuth2\Server\AuthorizationServer;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use Exception as PhpException;
 use RuntimeException;
@@ -28,20 +25,12 @@ use RuntimeException;
 class OAuthController extends AppController
 {
     /**
-     * OAuth 2.0 vendor authorization server object
-     *
-     * @var AuthorizationServer|null
-     */
-    protected ?AuthorizationServer $authorizationServer = null;
-
-    /**
      * @inheritDoc
      */
     public function initialize()
     {
         parent::initialize();
         $this->loadComponent('OAuthServer.OAuth');
-        $this->authorizationServer = Plugin::instance()->getAuthorizationServer();
     }
 
     /**
@@ -93,7 +82,8 @@ class OAuthController extends AppController
         }
 
         // Start authorization request
-        $authRequest = $this->authorizationServer->validateAuthorizationRequest($this->request);
+        $authServer  = $this->OAuth->getAuthorizationServer();
+        $authRequest = $authServer->validateAuthorizationRequest($this->request);
         $clientId    = $authRequest->getClient()->getIdentifier();
 
         // 'redirect_uri' is considered an optional argument but grant implementations dont always
@@ -116,7 +106,7 @@ class OAuthController extends AppController
                 $authRequest->setAuthorizationApproved(true);
                 $eventManager->dispatch(new Event('OAuthServer.afterAuthorize', $this));
                 // redirect
-                return $this->authorizationServer->completeAuthorizationRequest($authRequest, $this->response);
+                return $authServer->completeAuthorizationRequest($authRequest, $this->response);
             }
 
             // handle form posted UI confirmation of client authorization approval
@@ -129,7 +119,7 @@ class OAuthController extends AppController
                     $eventManager->dispatch(new Event('OAuthServer.afterDeny', $this));
                 }
                 // redirect
-                return $this->authorizationServer->completeAuthorizationRequest($authRequest, $this->response);
+                return $authServer->completeAuthorizationRequest($authRequest, $this->response);
             }
         } catch (OAuthServerException $exception) {
             // @TODO this is a JSON response ..?
@@ -160,7 +150,7 @@ class OAuthController extends AppController
         $request  = $this->request;
         $response = $this->response;
         try {
-            return $this->authorizationServer->respondToAccessTokenRequest($request, $response);
+            return $authServer->respondToAccessTokenRequest($request, $response);
         } catch (OAuthServerException $exception) {
             return $exception->generateHttpResponse($response);
         } catch (PhpException $exception) {
