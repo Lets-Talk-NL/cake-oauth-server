@@ -38,6 +38,7 @@
         "post-install-cmd": [
             "OAuthServer\\Console\\Installer::postInstall"
         ],
+        "fix-permissions": "OAuthServer\\Console\\Installer::postInstall",
         "test": "vendor/bin/phpunit"
     },
     "license": "MIT",
