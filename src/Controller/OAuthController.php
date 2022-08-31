@@ -147,8 +147,9 @@ class OAuthController extends AppController
         if (Configure::read('OAuthServer.serviceDisabled')) {
             throw new ServiceNotAvailableException();
         }
-        $request  = $this->request;
-        $response = $this->response;
+        $authServer = $this->OAuth->getAuthorizationServer();
+        $request    = $this->request;
+        $response   = $this->response;
         try {
             return $authServer->respondToAccessTokenRequest($request, $response);
         } catch (OAuthServerException $exception) {
