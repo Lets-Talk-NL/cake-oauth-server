@@ -5,6 +5,7 @@ namespace OAuthServer;
 use Cake\Core\Plugin as CakePlugin;
 use Cake\Core\BasePlugin;
 use Cake\Core\Configure;
+use Cake\Event\Event;
 use Cake\Event\EventDispatcherInterface;
 use Cake\Event\EventDispatcherTrait;
 use Cake\ORM\Locator\LocatorAwareTrait;
@@ -24,6 +25,7 @@ use LogicException;
 use OAuthServer\Exception\Exception;
 use OAuthServer\Lib\Traits\RepositoryAwareTrait;
 use OAuthServer\ORM\Locator\RepositoryLocator;
+use OpenIDConnectServer\ClaimExtractor;
 use function Functional\map;
 
 /**
@@ -195,7 +197,8 @@ class Plugin extends BasePlugin implements EventDispatcherInterface
         $responseType            = null;
         if ($this->hasConfiguredExtension(Extension::OPENID_CONNECT())) {
             $identityRepository = $this->getRepository(Repository::IDENTITY());
-            $responseType       = Factory::openConnectIdTokenResponseType($identityRepository);
+            $claimExtractor     = $this->createOpenIDConnectClaimExtractor();
+            $responseType       = Factory::openConnectIdTokenResponseType($identityRepository, $claimExtractor);
         }
         $server = Factory::authorizationServer($privateKey, $encryptionKey, $repositoryLocator, $responseType);
         foreach ($this->getGrantObjects() as $grantObject) {
@@ -204,6 +207,24 @@ class Plugin extends BasePlugin implements EventDispatcherInterface
         $server->setEmitter($this->getEmitter());
         $server->revokeRefreshTokens($configuredRefreshTokens ?? true);
         return $server;
+    }
+
+    /**
+     * Creates an OpenID Connect ClaimExtractor object in
+     * such a way that it may be externally modified by hooking
+     * into the OAuthServer.createClaimsExtractor event.
+     *
+     * By default this extractor only extracts OpenID Connect Core 1.0 user data
+     * claims excluding JWT specified claims (so excluding the 'sub')
+     *
+     * @link https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
+     * @return ClaimExtractor
+     */
+    public function createOpenIDConnectClaimExtractor(): ClaimExtractor
+    {
+        $claimExtractor = new ClaimExtractor();
+        $this->getEventManager()->dispatch(new Event('OAuthServer.createClaimsExtractor', $claimExtractor));
+        return $claimExtractor;
     }
 
     /**

@@ -11,8 +11,11 @@ use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 use League\OAuth2\Server\Entities\ScopeEntityInterface;
 use League\OAuth2\Server\Repositories\AccessTokenRepositoryInterface;
+use OAuthServer\Lib\Utility\Map;
 use OAuthServer\Model\Entity\AccessToken;
 use OAuthServer\Lib\Data\Entity\AccessToken as AccessTokenData;
+use OAuthServer\Model\Entity\AccessTokenScope;
+use OAuthServer\Model\Table\Interfaces\CheckTokenScopesInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use function Functional\map;
 use Exception;
@@ -29,7 +32,7 @@ use Exception;
  * @method AccessToken patchEntity(EntityInterface $entity, array $data, array $options = [])
  * @method AccessToken[] patchEntities($entities, array $data, array $options = [])
  */
-class AccessTokensTable extends Table implements AccessTokenRepositoryInterface
+class AccessTokensTable extends Table implements AccessTokenRepositoryInterface, CheckTokenScopesInterface
 {
     /**
      * @inheritDoc
@@ -102,6 +105,7 @@ class AccessTokensTable extends Table implements AccessTokenRepositoryInterface
             ->count();
     }
 
+
     /**
      * Finds active (unexpired) access tokens based on the
      * given client_id and optionally user_id
@@ -121,5 +125,18 @@ class AccessTokensTable extends Table implements AccessTokenRepositoryInterface
         $options = $optionsResolver->resolve($options);
         // not checking refresh tokens depending on the extent of activity required may be added later
         return $query->where([$this->aliasField('expires') . ' >' => Time::now()->getTimestamp()] + $options);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function hasScopes(string $id, string ...$scope): bool
+    {
+        /** @var AccessToken $entity */
+        if (!$entity = $this->find()->where(['oauth_token' => $id])->contain(['AccessTokenScopes'])->first()) {
+            return false;
+        }
+        $dbScope = map($entity->access_token_scopes ?? [], fn(AccessTokenScope $a) => $a->scope_id);
+        return Map::compareValues($dbScope, $scope);
     }
 }

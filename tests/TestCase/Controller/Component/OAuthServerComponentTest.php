@@ -3,7 +3,7 @@
 namespace OAuthServer\Test\TestCase\Controller\Component;
 
 use Cake\TestSuite\TestCase;
-use OAuthServer\Controller\Component\OAuthComponent;
+use OAuthServer\Controller\Component\OAuthServerComponent;
 use OAuthServer\Controller\OAuthController;
 use OAuthServer\Lib\Data\Entity\AccessToken;
 use OAuthServer\Lib\Data\Entity\User;
@@ -12,7 +12,7 @@ use OAuthServer\Model\Table\ClientsTable;
 use DateTimeImmutable;
 use OAuthServer\Plugin;
 
-class OAuthComponentTest extends TestCase
+class OAuthServerComponentTest extends TestCase
 {
     /**
      * @inheritDoc
@@ -26,9 +26,9 @@ class OAuthComponentTest extends TestCase
     ];
 
     /**
-     * @var OAuthComponent
+     * @var OAuthServerComponent
      */
-    protected OAuthComponent $component;
+    protected OAuthServerComponent $component;
 
     /**
      * @var ClientsTable
@@ -43,7 +43,7 @@ class OAuthComponentTest extends TestCase
         parent::setUp();
         $controller = new OAuthController();
         $controller->initialize();
-        $this->component    = new OAuthComponent($controller->components());
+        $this->component    = new OAuthServerComponent($controller->components());
         $this->clientsTable = $this->component->loadRepository('Clients', Repository::CLIENT());
     }
 

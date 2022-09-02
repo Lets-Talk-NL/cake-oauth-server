@@ -205,11 +205,11 @@ class Factory
      * Get OAuth 2.0 OpenID Connect ID extension response type object
      *
      * @param IdentityProviderInterface $identityProvider
+     * @param ClaimExtractor            $claimExtractor
      * @return ResponseTypeInterface
      */
-    public static function openConnectIdTokenResponseType(IdentityProviderInterface $identityProvider): ResponseTypeInterface
+    public static function openConnectIdTokenResponseType(IdentityProviderInterface $identityProvider, ClaimExtractor $claimExtractor): ResponseTypeInterface
     {
-        $claimExtractor = new ClaimExtractor();
         return new IdTokenResponse($identityProvider, $claimExtractor);
     }
 
