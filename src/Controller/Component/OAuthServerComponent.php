@@ -5,6 +5,7 @@ namespace OAuthServer\Controller\Component;
 use Cake\Controller\Component;
 use Cake\Controller\Component\AuthComponent;
 use Cake\ORM\Table;
+use League\OAuth2\Server\Repositories\UserRepositoryInterface;
 use OAuthServer\Lib\Data\Entity\User as UserData;
 use OAuthServer\Lib\Enum\Repository;
 use OAuthServer\Lib\Traits\RepositoryAwareTrait;
@@ -17,11 +18,13 @@ use LogicException;
 /**
  * OAuth 2.0 server process controller helper component
  *
- * @property AccessTokensTable $AccessTokens
- * @property Table             $Users
- * @property ScopesTable       $Scopes
+ * @property AccessTokensTable             $AccessTokens
+ * @property Table|UserRepositoryInterface $Users
+ * @property ScopesTable                   $Scopes
+ *
+ * @internal
  */
-class OAuthComponent extends Component
+class OAuthServerComponent extends Component
 {
     use RepositoryAwareTrait;
 

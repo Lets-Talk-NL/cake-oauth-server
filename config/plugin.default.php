@@ -6,6 +6,7 @@ return [
         'indexRedirectDisabled' => false,
         'serviceDisabled'       => false, // all oauth endpoints except oauth/status will be HTTP 503'd when true
         'statusDisabled'        => false, // oauth/status endpoint will be HTTP 503'd when true
+        'userInfoDisabled'      => false, // oauth/userinfo endpoint will be HTTP 503'd when true
         'refreshTokensEnabled'  => true, // allows refresh tokens to be used set ttl using a different config below
         'privateKey'            => [
             'path'     => 'file://' . __DIR__ . '/private.example.key',

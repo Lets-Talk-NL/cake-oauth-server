@@ -6,13 +6,17 @@ use Cake\Core\Configure;
 use Cake\Event\Event;
 use Cake\Http\Exception\NotFoundException;
 use Cake\Http\Response;
-use OAuthServer\Controller\Component\OAuthComponent;
+use OAuthServer\Controller\Component\OAuthResourcesComponent;
+use OAuthServer\Controller\Component\OAuthServerComponent;
 use OAuthServer\Exception\ServiceNotAvailableException;
+use OAuthServer\Model\Table\Interfaces\CheckTokenScopesInterface;
 use OAuthServer\Plugin;
+use OpenIDConnectServer\Entities\ClaimSetInterface;
 use UnexpectedValueException;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use Exception as PhpException;
 use RuntimeException;
+use Cake\Controller\Controller;
 
 /**
  * OAuth 2.0 process controller
@@ -20,7 +24,9 @@ use RuntimeException;
  * Uses AppController alias in the current namespace
  * from bootstrap and config OAuthServer.appController
  *
- * @property OAuthComponent $OAuth
+ * @property OAuthServerComponent    $OAuthServer
+ * @property OAuthResourcesComponent $OAuthResources
+ * @mixin Controller
  */
 class OAuthController extends AppController
 {
@@ -30,7 +36,10 @@ class OAuthController extends AppController
     public function initialize()
     {
         parent::initialize();
-        $this->loadComponent('OAuthServer.OAuth');
+        $this->loadComponent('OAuthServer.OAuthServer');
+        $this->loadComponent('OAuthServer.OAuthResources');
+        $this->OAuthResources->allow();
+        $this->OAuthResources->deny('userInfo');
     }
 
     /**
@@ -42,8 +51,14 @@ class OAuthController extends AppController
         if (!$this->components()->has('Auth')) {
             throw new RuntimeException('OAuthServer requires Auth component to be loaded and properly configured');
         }
-        $this->Auth->allow(['oauth', 'accessToken', 'status']);
+        $this->Auth->allow(['oauth', 'accessToken', 'status', 'userInfo']);
         $this->Auth->deny(['authorize']);
+
+        // The UserInfo Endpoint SHOULD support the use of Cross Origin Resource Sharing (CORS) [CORS]
+        // and or other methods as appropriate to enable Java Script Clients to access the endpoint.
+        if ($this->request->getParam('action') === 'userInfo') {
+            $this->response = $this->response->withHeader('Access-Control-Allow-Origin', '*');
+        }
     }
 
     /**
@@ -71,6 +86,7 @@ class OAuthController extends AppController
     /**
      * Authorize action handler
      *
+     * @link https://www.rfc-editor.org/rfc/rfc6749.html#page-18
      * @return Response
      * @TODO JSON seems to be the standard, but improve content type handling?
      * @TODO improve exception handling?
@@ -82,7 +98,7 @@ class OAuthController extends AppController
         }
 
         // Start authorization request
-        $authServer  = $this->OAuth->getAuthorizationServer();
+        $authServer  = $this->OAuthServer->getAuthorizationServer();
         $authRequest = $authServer->validateAuthorizationRequest($this->request);
         $clientId    = $authRequest->getClient()->getIdentifier();
 
@@ -93,7 +109,7 @@ class OAuthController extends AppController
         }
 
         // Once the user has logged in set the user on the AuthorizationRequest
-        if ($user = $this->OAuth->getSessionUserData()) {
+        if ($user = $this->OAuthServer->getSessionUserData()) {
             $authRequest->setUser($user);
         }
 
@@ -102,7 +118,7 @@ class OAuthController extends AppController
 
         try {
             // immediately approve authorization request if already has active tokens
-            if ($this->OAuth->hasActiveAccessTokens($clientId, $user->getIdentifier())) {
+            if ($this->OAuthServer->hasActiveAccessTokens($clientId, $user->getIdentifier())) {
                 $authRequest->setAuthorizationApproved(true);
                 $eventManager->dispatch(new Event('OAuthServer.afterAuthorize', $this));
                 // redirect
@@ -138,6 +154,7 @@ class OAuthController extends AppController
     /**
      * Access token action handler
      *
+     * @link https://www.rfc-editor.org/rfc/rfc6749.html#page-23
      * @return Response
      * @TODO JSON seems to be the standard, but improve content type handling?
      * @TODO improve exception handling?
@@ -147,7 +164,7 @@ class OAuthController extends AppController
         if (Configure::read('OAuthServer.serviceDisabled')) {
             throw new ServiceNotAvailableException();
         }
-        $authServer = $this->OAuth->getAuthorizationServer();
+        $authServer = $this->OAuthServer->getAuthorizationServer();
         $request    = $this->request;
         $response   = $this->response;
         try {
@@ -164,7 +181,10 @@ class OAuthController extends AppController
     /**
      * Service status, documentation and operation parameters
      *
+     * NOTE: This is NOT the same as the OpenID Connect discovery endpoint but a custom status endpoint
+     *
      * @return Response
+     * @TODO implement just enough parts of https://openid.net/specs/openid-connect-discovery-1_0.html to provide discovery without WebFinger?
      * @TODO JSON seems to be the standard, but improve content type handling?
      * @throws ServiceNotAvailableException
      */
@@ -177,8 +197,60 @@ class OAuthController extends AppController
             throw new NotFoundException();
         }
         $status = Plugin::instance()->getStatus();
-        return $this->getResponse()
-                    ->withType('json')
-                    ->withStringBody(json_encode($status));
+        return $this->response
+            ->withType('json')
+            ->withStringBody(json_encode($status));
+    }
+
+    /**
+     * @link https://openid.net/specs/openid-connect-core-1_0.html#UserInfo
+     * @link https://openid.net/specs/openid-connect-core-1_0.html#ScopeClaims
+     * @return Response
+     */
+    public function userInfo(): Response
+    {
+        if (Configure::read('OAuthServer.userInfoDisabled')) {
+            // does not fall under section 5.3.3.
+            throw new ServiceNotAvailableException();
+        }
+        if (!$this->request->is('json')) {
+            // does not fall under section 5.3.3.
+            throw new NotFoundException();
+        }
+        try {
+            $user = $this->OAuthResources->getUser();
+        } catch (PhpException $e) {
+            return OAuthServerException::serverError('Erroneous attributes')->generateHttpResponse($this->response);
+        }
+        if (!$userId = $user->getUserId()) {
+            // When an error condition occurs, the UserInfo Endpoint returns an
+            // Error Response as defined in Section 3 of OAuth 2.0 Bearer Token Usage [RFC6750]
+            return OAuthServerException::accessDenied('Unrecognised user')->generateHttpResponse($this->response);
+        }
+        // Get user DTO using the user id from the access token
+        if (!$entity = $this->OAuthServer->Users->getUserEntityByIdentifier($userId)) {
+            return OAuthServerException::accessDenied('User not found')->generateHttpResponse($this->response);
+        }
+        // Does an additional scope validity check by token id (if AccessTokens repository has implemented the CheckTokenScopes interface)
+        if ($this->OAuthServer->AccessTokens instanceof CheckTokenScopesInterface
+            && !$this->OAuthServer->AccessTokens->hasScopes($user->getAccessTokenId(), ...$user->getScopes())) {
+            return OAuthServerException::accessDenied('Scope mismatch')->generateHttpResponse($this->response);
+        }
+
+        $stdClaims        = [];
+        $stdClaims['aud'] = $user->getClientId();
+        $stdClaims['sub'] = $user->getUserId();
+
+        $claims = [];
+        if ($entity instanceof ClaimSetInterface) {
+            $claims = $entity->getClaims();
+        }
+        $claimExtractor = Plugin::instance()->createOpenIDConnectClaimExtractor();
+        $claims         = $claimExtractor->extract($user->getScopes(), $claims);
+        $claims         = $stdClaims + $claims;
+
+        return $this->response
+            ->withType('json')
+            ->withStringBody(json_encode($claims));
     }
 }

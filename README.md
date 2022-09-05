@@ -175,6 +175,11 @@ Triggered when finalizing scopes which is during completion of an auth request o
 
 (depends on default Scopes table)
 ***
+#### `OAuthServer.createClaimsExtractor`
+Triggered when creating an OpenID Connect OAuth 2.0 claims extractor object. This object binds sets
+of user claims by scope. This allows you to customize claimsets bound to scopes and give back more user information than is originally specified.
+
+***
 #### `OAuthServer.validateClient`
 Triggered during an access token request (the client may already have been acquired during an auth code request depending on the grant type used so its not just for the access token endpoint).
 

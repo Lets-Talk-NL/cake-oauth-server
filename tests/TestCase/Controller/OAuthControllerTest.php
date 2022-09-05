@@ -235,4 +235,61 @@ class OAuthControllerTest extends IntegrationTestCase
         $this->assertResponseOk();
         $this->assertResponseContains('{');
     }
+
+    /**
+     * @return void
+     */
+    public function testUserInfo(): void
+    {
+        // test without Authorization header
+        $this->get('/oauth/userinfo.json');
+        $this->assertResponseCode(401);
+        // authorize user
+        $scope        = 'address email openid phone profile';
+        $redirectUri  = 'http://www.example.com';
+        $query        = [
+            'client_id' => 'TEST', 'redirect_uri' => $redirectUri, 'response_type' => 'code', 'scope' => $scope,
+        ];
+        $authorizeUrl = $this->url('/oauth/authorize') . '?' . http_build_query($query);
+        $this->session(['Auth.User.id' => 4]);
+        $this->get($authorizeUrl);
+        $this->assertResponseCode(200);
+        $this->post($authorizeUrl, ['authorization' => 'Approve']);
+        $this->assertResponseCode(302);
+        $this->_session = [];
+        $location       = $this->_response->getHeaderLine('Location');
+        $this->assertInternalType('string', $location);
+        $prefix = $redirectUri . '?code=';
+        $this->assertTextStartsWith($prefix, $location);
+        $code = substr($location, strlen($prefix));
+        $this->session([]);
+        $_SERVER['HTTP_HOST'] = 'www.example.com';
+        // get access_token from oauth/access_token.json
+        $accessTokenUrl = $this->url('/oauth/access_token', 'json');
+        $this->post($accessTokenUrl, [
+            'grant_type'    => 'authorization_code',
+            'client_id'     => 'TEST',
+            'client_secret' => 'TestSecret',
+            'redirect_uri'  => $redirectUri,
+            'code'          => $code,
+            'scope'         => $scope,
+        ]);
+        $this->assertResponseCode(200);
+        $this->assertResponseContains('"id_token":');
+        $this->assertResponseContains('"access_token":');
+        $this->_response->getBody()->rewind();
+        $body                      = $this->_response->getBody()->getContents();
+        $body                      = json_decode($body, JSON_OBJECT_AS_ARRAY);
+        $accessToken               = $body['access_token'];
+        $this->_request['headers'] = ['Authorization' => $accessToken];
+        Configure::write('OAuthServer.userInfoDisabled', true);
+        $this->get('/oauth/userinfo.json');
+        $this->assertResponseCode(503);
+        Configure::write('OAuthServer.userInfoDisabled', false);
+        $this->_request['headers'] = ['Authorization' => $accessToken];
+        $this->get('/oauth/userinfo.json');
+        $this->assertResponseCode(200);
+        $expected = '{"aud":"TEST","sub":"4","address":"50 any street, any state, 55555","email":"john.doe@example.com","email_verified":true,"phone_number":"(866) 555-5555","phone_number_verified":true,"name":"John Smith","family_name":"Smith","given_name":"John","middle_name":"Doe","nickname":"JDog","preferred_username":"jdogsmith77","profile":"","picture":"avatar.png","website":"http:\/\/www.google.com","gender":"M","birthdate":"01\/01\/1990","zoneinfo":"","locale":"US","updated_at":"01\/01\/2018"}';
+        $this->assertResponseContains($expected);
+    }
 }
