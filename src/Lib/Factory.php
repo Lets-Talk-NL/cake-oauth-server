@@ -112,33 +112,17 @@ class Factory
     }
 
     /**
-     * Get OAuth 2.0 required repository objects
+     * Completes the provided repository mapping with defaults
      *
-     * @param string[] $mapping e.g. [Repository::AUTH_CODE => 'MyPlugin.MyTable']
-     * @return RepositoryInterface[] e.g. [Repository::AUTH_CODE => Object(RepositoryInterface implementation) {}]
-     * @throws Exception
+     * @param array $inputMapping e.g. [Repository::AUTH_CODE => 'MyPlugin.MyTable']
+     * @return array e.g. [... (defaults), Repository::AUTH_CODE => 'MyPlugin.MyTable', ... (defaults)]
      */
-    public static function repositories(array $mapping): array
+    public static function completeRepositoryMapping(array $inputRepositoryMapping): array
     {
-        $locator  = TableRegistry::getTableLocator();
-        $defaults = Repository::aliasDefaults();
-        $mapping  += $defaults; // replenish mapping from defaults
-        $mapping  = array_intersect_key($mapping, $defaults); // only keys from defaults
-        $objects  = [];
-        foreach ($mapping as $type => $alias) {
-            foreach ([$alias, $defaults[$type]] as $alias) {
-                if ($object = $locator->get($alias)) {
-                    break;
-                }
-            }
-            if (!$object) {
-                $label = Repository::labels($type);
-                $msg   = sprintf('missing repository "%s" both from mapping and defaults', $label);
-                throw new Exception($msg);
-            }
-            $objects[$type] = $object;
-        }
-        return $objects;
+        $defaults               = Repository::aliasDefaults();
+        $inputRepositoryMapping += $defaults; // replenish mapping from defaults
+        $inputRepositoryMapping = array_intersect_key($inputRepositoryMapping, $defaults); // only keys from defaults
+        return $inputRepositoryMapping;
     }
 
     /**

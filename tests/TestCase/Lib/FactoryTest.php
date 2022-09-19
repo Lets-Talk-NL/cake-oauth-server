@@ -70,13 +70,30 @@ class FactoryTest extends TestCase
     /**
      * @return void
      */
-    public function testRepositories(): void
+    public function testCompleteRepositoryMappingDefaults(): void
     {
-        $repositories = Factory::repositories([]);
+        $repositories = Factory::completeRepositoryMapping([]);
         $this->assertInternalType('array', $repositories);
         foreach (Repository::toArray() as $className) {
             $this->assertArrayHasKey($className, $repositories);
-            $this->assertInstanceOf($className, $repositories[$className]);
+            $this->assertEquals($repositories[$className], Repository::aliasDefaults($className));
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testCompleteRepositoryMappingCustomMappingInput(): void
+    {
+        $repositories = Factory::completeRepositoryMapping([Repository::ACCESS_TOKEN => 'AliasForNonExistingTableToTest']);
+        $this->assertInternalType('array', $repositories);
+        $this->assertArrayHasKey(Repository::ACCESS_TOKEN, $repositories);
+        $this->assertEquals($repositories[Repository::ACCESS_TOKEN], 'AliasForNonExistingTableToTest');
+        $defaults = Repository::aliasDefaults();
+        unset($defaults[Repository::ACCESS_TOKEN]);
+        foreach ($defaults as $className => $alias) {
+            $this->assertArrayHasKey($className, $repositories);
+            $this->assertEquals($repositories[$className], $alias);
         }
     }
 }

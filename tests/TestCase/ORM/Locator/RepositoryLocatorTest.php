@@ -4,58 +4,107 @@ namespace OAuthServer\Test\TestCase\ORM\Locator;
 
 use Cake\Core\Configure;
 use Cake\ORM\Locator\LocatorInterface;
+use Cake\ORM\Table;
+use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
-use OAuthServer\Exception\NotImplementedException;
+use OAuthServer\Exception\InvalidOAuthRepositoryException;
 use OAuthServer\Lib\Enum\Repository;
 use OAuthServer\ORM\Locator\RepositoryLocator;
 use UnexpectedValueException;
 use InvalidArgumentException;
+use RuntimeException;
 
 class RepositoryLocatorTest extends TestCase
 {
+    //region Properties
     /**
      * @var RepositoryLocator
      */
-    protected RepositoryLocator $emptyLocator;
+    protected RepositoryLocator $locator;
+    //endregion
 
-    /**
-     * @var RepositoryLocator
-     */
-    protected RepositoryLocator $configuredLocator;
-
+    //region Lifecycle
     /**
      * @inheritDoc
      */
     public function setUp()
     {
         parent::setUp();
-        $this->emptyLocator      = new RepositoryLocator([]);
-        $this->configuredLocator = new RepositoryLocator(Configure::read('OAuthServer.repositories'));
+        TableRegistry::getTableLocator()->clear();
+        $this->locator = new RepositoryLocator(Configure::read('OAuthServer.repositories'));
     }
+    //endregion
 
+    //region Test misc
     /**
      * @return void
      */
     public function testImplementation(): void
     {
-        $this->assertInstanceOf(LocatorInterface::class, $this->emptyLocator);
-        $this->assertInstanceOf(LocatorInterface::class, $this->configuredLocator);
+        $this->assertInstanceOf(LocatorInterface::class, $this->locator);
+    }
+    //endregion
+
+    //region Test methods
+    /**
+     * @return void
+     */
+    public function testGetRepositoryAliasFullyQualifiedInterfaceName(): void
+    {
+        $this->expectException(UnexpectedValueException::class);
+        $this->locator->getRepositoryAliasFullyQualifiedInterfaceName('nonexisting');
+        $this->expectException(InvalidArgumentException::class);
+        $this->locator->getRepositoryAliasFullyQualifiedInterfaceName(123);
+        foreach (Repository::values() as $repository) {
+            $value = $repository->getValue();
+            $this->assertEquals($value, $this->locator->getRepositoryAliasFullyQualifiedInterfaceName($repository));
+            $this->assertEquals($value, $this->locator->getRepositoryAliasFullyQualifiedInterfaceName($repository->getValue()));
+        }
     }
 
     /**
      * @return void
      */
-    public function testCheckAlias(): void
+    public function testLoad(): void
     {
         $this->expectException(UnexpectedValueException::class);
-        $this->emptyLocator->checkAlias('nonexisting');
-        $this->expectException(InvalidArgumentException::class);
-        $this->emptyLocator->checkAlias(123);
-        foreach (Repository::values() as $repository) {
-            $value = $repository->getValue();
-            $this->assertEquals($value, $this->emptyLocator->checkAlias($repository));
-            $this->assertEquals($value, $this->emptyLocator->checkAlias($repository->getValue()));
-        }
+        $this->locator->load('nonexisting');
+        $this->assertInstanceOf(Repository::AUTH_CODE, $this->locator->load(Repository::AUTH_CODE));
+    }
+
+    /**
+     * @return void
+     */
+    public function testSetConfigOne(): void
+    {
+        $this->locator->setConfig(Repository::ACCESS_TOKEN(), ['random' => 'something']);
+        $this->locator->setConfig(Repository::ACCESS_TOKEN, ['random' => 'something']);
+        $this->assertEquals($this->locator->getConfig(Repository::ACCESS_TOKEN), ['random' => 'something']);
+        $this->expectException(UnexpectedValueException::class);
+        $this->locator->setConfig('nonexisting', ['random' => 'something']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testSetConfigTwo(): void
+    {
+        $this->locator->get(Repository::ACCESS_TOKEN);
+        $this->expectException(RuntimeException::class);
+        $this->locator->setConfig(Repository::ACCESS_TOKEN, ['random' => 'something']);
+        $this->locator->setConfig(Repository::ACCESS_TOKEN(), ['random' => 'something']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testGetConfig(): void
+    {
+        $this->locator->setConfig(Repository::ACCESS_TOKEN, ['random' => 'something']);
+        $this->assertEquals($this->locator->getConfig(Repository::ACCESS_TOKEN), ['random' => 'something']);
+        $this->assertEquals($this->locator->getConfig(Repository::ACCESS_TOKEN()), ['random' => 'something']);
+        $this->expectException(UnexpectedValueException::class);
+        $this->locator->getConfig('nonexisting');
     }
 
     /**
@@ -63,19 +112,8 @@ class RepositoryLocatorTest extends TestCase
      */
     public function testConfig(): void
     {
-        $this->expectException(NotImplementedException::class);
-        $this->emptyLocator->config(Repository::IDENTITY, []);
-    }
-
-    /**
-     * @return void
-     */
-    public function testExists(): void
-    {
-        foreach (Repository::values() as $repository) {
-            $className = $repository->getValue();
-            $this->assertTrue($this->configuredLocator->exists($className));
-        }
+        $this->assertEquals($this->locator->config(Repository::ACCESS_TOKEN, ['random' => 'something']), ['random' => 'something']);
+        $this->assertEquals($this->locator->config(Repository::ACCESS_TOKEN(), ['random' => 'something']), ['random' => 'something']);
     }
 
     /**
@@ -85,7 +123,20 @@ class RepositoryLocatorTest extends TestCase
     {
         foreach (Repository::values() as $repository) {
             $className = $repository->getValue();
-            $this->assertInstanceOf($className, $this->configuredLocator->get($className));
+            $this->assertInstanceOf($className, $this->locator->get($className));
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testExists(): void
+    {
+        foreach (Repository::values() as $repository) {
+            $className = $repository->getValue();
+            $this->assertFalse($this->locator->exists($className));
+            $this->locator->get($className);
+            $this->assertTrue($this->locator->exists($className));
         }
     }
 
@@ -96,9 +147,20 @@ class RepositoryLocatorTest extends TestCase
     {
         foreach (Repository::values() as $repository) {
             $className = $repository->getValue();
-            $this->assertInstanceOf($className, $this->emptyLocator->set($className, $this->configuredLocator->get($className)));
-            $this->assertInstanceOf($className, $this->emptyLocator->get($className));
+            $this->assertInstanceOf($className, $this->locator->set($className, $this->locator->get($className)));
+            $this->assertInstanceOf($className, $this->locator->get($className));
         }
+        $this->expectException(UnexpectedValueException::class);
+        $this->locator->set('nonexisting', new Table());
+    }
+
+    /**
+     * @return void
+     */
+    public function testSetInvalidRepositoryException(): void
+    {
+        $this->expectException(InvalidOAuthRepositoryException::class);
+        $this->locator->set(Repository::ACCESS_TOKEN, new Table());
     }
 
     /**
@@ -106,10 +168,10 @@ class RepositoryLocatorTest extends TestCase
      */
     public function testClear(): void
     {
-        $this->configuredLocator->clear();
+        $this->locator->clear();
         foreach (Repository::values() as $repository) {
             $className = $repository->getValue();
-            $this->assertFalse($this->configuredLocator->exists($className));
+            $this->assertFalse($this->locator->exists($className));
         }
     }
 
@@ -120,8 +182,9 @@ class RepositoryLocatorTest extends TestCase
     {
         foreach (Repository::values() as $repository) {
             $className = $repository->getValue();
-            $this->configuredLocator->remove($className);
-            $this->assertFalse($this->configuredLocator->exists($className));
+            $this->locator->remove($className);
+            $this->assertFalse($this->locator->exists($className));
         }
     }
+    //endregion
 }

@@ -65,13 +65,13 @@ class Repository extends Enum
     public static function labels(?string $value = null)
     {
         $labels = [
-            static::ACCESS_TOKEN  => 'Access token repository',
-            static::AUTH_CODE     => 'Auth code repository',
-            static::CLIENT        => 'Client repository',
-            static::REFRESH_TOKEN => 'Refresh token repository',
-            static::SCOPE         => 'Scope repository',
-            static::USER          => 'User repository',
-            static::IDENTITY      => 'User identity repository',
+            static::ACCESS_TOKEN  => 'access token repository',
+            static::AUTH_CODE     => 'auth code repository',
+            static::CLIENT        => 'client repository',
+            static::REFRESH_TOKEN => 'refresh token repository',
+            static::SCOPE         => 'scope repository',
+            static::USER          => 'user repository',
+            static::IDENTITY      => 'user identity repository',
         ];
         return static::enum($value, $labels);
     }
