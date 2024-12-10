@@ -73,14 +73,14 @@ class OauthInitialMigration extends AbstractMigration
      */
     public function down()
     {
-        $this->dropTable('oauth_access_tokens');
-        $this->dropTable('oauth_auth_codes');
-        $this->dropTable('oauth_clients');
-        $this->dropTable('oauth_sessions');
-        $this->dropTable('oauth_scopes');
-        $this->dropTable('oauth_refresh_tokens');
-        $this->dropTable('oauth_access_token_scopes');
-        $this->dropTable('oauth_auth_code_scopes');
-        $this->dropTable('oauth_session_scopes');
+        $this->table('oauth_access_tokens')->drop()->save();
+        $this->table('oauth_auth_codes')->drop()->save();
+        $this->table('oauth_clients')->drop()->save();
+        $this->table('oauth_sessions')->drop()->save();
+        $this->table('oauth_scopes')->drop()->save();
+        $this->table('oauth_refresh_tokens')->drop()->save();
+        $this->table('oauth_access_token_scopes')->drop()->save();
+        $this->table('oauth_auth_code_scopes')->drop()->save();
+        $this->table('oauth_session_scopes')->drop()->save();
     }
 }
