@@ -2,7 +2,7 @@
     "name": "uafrica/oauth-server",
     "description": "OAuth Server for CakePHP 3 using the PHP League's OAuth2 Server",
     "type": "cakephp-plugin",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "keywords": [
         "cakephp",
         "oauth",
@@ -12,7 +12,7 @@
     ],
     "require": {
         "php": ">=7.4",
-        "cakephp/cakephp": "3.9.*",
+        "cakephp/cakephp": "~3.10",
         "league/oauth2-server": "~8.3",
         "cakephp/migrations": "^2.0",
         "steverhoades/oauth2-openid-connect-server": "^2.4",
