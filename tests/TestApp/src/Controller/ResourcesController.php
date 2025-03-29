@@ -7,18 +7,12 @@ namespace App\Controller;
  */
 class ResourcesController extends TestAppController
 {
-    /**
-     * @inheritDoc
-     */
-    public function initialize()
+    public function initialize(): void
     {
         parent::initialize();
         $this->disableAutoRender();
     }
 
-    /**
-     * @inheritDoc
-     */
     public function someResourceEndpoint()
     {
         return $this->response->withStringBody(json_encode($this->Auth->user()));

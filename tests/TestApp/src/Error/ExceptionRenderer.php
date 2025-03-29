@@ -7,14 +7,8 @@ use Cake\Http\Response;
 use Exception;
 use League\OAuth2\Server\Exception\OAuthServerException;
 
-/**
- * @inheritDoc
- */
 class ExceptionRenderer extends CakeExceptionRenderer
 {
-    /**
-     * @inheritDoc
-     */
     protected function _code(Exception $exception)
     {
         $code = parent::_code($exception);
@@ -24,9 +18,6 @@ class ExceptionRenderer extends CakeExceptionRenderer
         return $code;
     }
 
-    /**
-     * @inheritDoc
-     */
     public function render()
     {
         //fwrite(STDERR, \Cake\Error\Debugger::exportVar($this->error) . PHP_EOL);

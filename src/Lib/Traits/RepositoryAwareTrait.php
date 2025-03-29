@@ -5,7 +5,7 @@ namespace OAuthServer\Lib\Traits;
 use Cake\Datasource\RepositoryInterface;
 use OAuthServer\Exception\Exception;
 use OAuthServer\Lib\Enum\Repository;
-use OAuthServer\Plugin;
+use OAuthServer\OAuthServerPlugin;
 
 /**
  * Helper trait that sets the repository on the calling object
@@ -15,13 +15,11 @@ trait RepositoryAwareTrait
     /**
      * Get the Cake repository representation of the given OAuth 2.0 server repository requirement
      *
-     * @param Repository $repository
-     * @return RepositoryInterface
      * @throws Exception
      */
     public function getRepository(Repository $repository): RepositoryInterface
     {
-        return Plugin::instance()->getTableLocator()->get($repository);
+        return OAuthServerPlugin::instance()->getTableLocator()->get($repository);
     }
 
     /**
@@ -31,7 +29,6 @@ trait RepositoryAwareTrait
      *
      * @param string     $name       Used to set it on the object
      * @param Repository $repository Value from repository enumeration
-     * @return RepositoryInterface
      */
     public function loadRepository(string $name, Repository $repository): RepositoryInterface
     {

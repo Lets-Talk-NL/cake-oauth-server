@@ -11,9 +11,6 @@ use OAuthServer\Auth\OAuthAuthenticate;
 
 class OAuthAuthenticateTest extends TestCase
 {
-    /**
-     * @inheritDoc
-     */
     public function setUp()
     {
         parent::setUp();
@@ -23,9 +20,6 @@ class OAuthAuthenticateTest extends TestCase
         $this->response = $this->getMockBuilder(Response::class)->getMock();
     }
 
-    /**
-     * @return void
-     */
     public function testAuthenticate(): void
     {
         $request       = new Request('posts/index');

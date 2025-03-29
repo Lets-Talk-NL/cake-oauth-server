@@ -8,14 +8,8 @@ use OAuthServer\Controller\Component\OAuthResourcesComponent;
 
 class OAuthResourcesComponentTest extends TestCase
 {
-    /**
-     * @var OAuthResourcesComponent
-     */
     protected OAuthResourcesComponent $component;
 
-    /**
-     * @inheritDoc
-     */
     public function setUp()
     {
         parent::setUp();
@@ -24,44 +18,29 @@ class OAuthResourcesComponentTest extends TestCase
         $this->component = new OAuthResourcesComponent($controller->components());
     }
 
-    /**
-     * @return void
-     */
     public function testAllowNone(): void
     {
         $this->assertEquals([], $this->component->getAllowedActions());
     }
 
-    /**
-     * @return void
-     */
     public function testAllowAll(): void
     {
         $this->component->allow();
         $this->assertTrue(in_array('someResourceEndpoint', $this->component->getAllowedActions(), true));
     }
 
-    /**
-     * @return void
-     */
     public function testAllowString(): void
     {
         $this->component->allow('index');
         $this->assertEquals(['index'], $this->component->getAllowedActions());
     }
 
-    /**
-     * @return void
-     */
     public function testAllowArray(): void
     {
         $this->component->allow(['index']);
         $this->assertEquals(['index'], $this->component->getAllowedActions());
     }
 
-    /**
-     * @return void
-     */
     public function testDenyAll(): void
     {
         $this->assertEquals([], $this->component->getAllowedActions());
@@ -70,9 +49,6 @@ class OAuthResourcesComponentTest extends TestCase
         $this->assertEquals([], $this->component->getAllowedActions());
     }
 
-    /**
-     * @return void
-     */
     public function testDenyString(): void
     {
         $this->assertEquals([], $this->component->getAllowedActions());
@@ -81,9 +57,6 @@ class OAuthResourcesComponentTest extends TestCase
         $this->assertEquals([], $this->component->getAllowedActions());
     }
 
-    /**
-     * @return void
-     */
     public function testDenyArray(): void
     {
         $this->assertEquals([], $this->component->getAllowedActions());

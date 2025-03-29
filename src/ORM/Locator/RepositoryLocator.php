@@ -3,17 +3,17 @@
 namespace OAuthServer\ORM\Locator;
 
 use Cake\ORM\Exception\MissingTableClassException;
+use Cake\ORM\Locator\LocatorInterface;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
+use InvalidArgumentException;
 use League\OAuth2\Server\Repositories\RepositoryInterface;
 use OAuthServer\Exception\Exception;
 use OAuthServer\Exception\InvalidOAuthRepositoryException;
 use OAuthServer\Lib\Enum\Repository;
 use OAuthServer\Lib\Factory;
-use UnexpectedValueException;
-use Cake\ORM\Locator\LocatorInterface;
-use InvalidArgumentException;
 use RuntimeException;
+use UnexpectedValueException;
 
 /**
  * This CakePHP table locator locates tables based on OAuth 2.0 repository interface
@@ -28,7 +28,6 @@ class RepositoryLocator implements LocatorInterface
      * repository interface implementation objects
      *
      * @link RepositoryLocator::__construct
-     * @var array
      */
     protected array $mapping = [];
 
@@ -41,8 +40,6 @@ class RepositoryLocator implements LocatorInterface
 
     /**
      * Configuration of objects
-     *
-     * @var array
      */
     protected array $config = [];
 
@@ -60,9 +57,9 @@ class RepositoryLocator implements LocatorInterface
      * Checks the given alias is a value of the enumerated repository types
      *
      * @param string|Repository $alias e.g. Repository::ACCESS_TOKEN or Repository::ACCESS_TOKEN()
-     * @return string e.g. '\League\OAuth2\Server\Repositories\...Interface'
      * @throws UnexpectedValueException
      * @throws InvalidArgumentException
+     * @return string e.g. '\League\OAuth2\Server\Repositories\...Interface'
      */
     public function getRepositoryAliasFullyQualifiedInterfaceName($alias): string
     {
@@ -79,11 +76,10 @@ class RepositoryLocator implements LocatorInterface
      * Loads the table for the given alias value of the enumerated repository types
      *
      * @param string|Repository $alias e.g. Repository::ACCESS_TOKEN or Repository::ACCESS_TOKEN()
-     * @param array             $options
-     * @return Table|RepositoryInterface
      * @throws UnexpectedValueException
      * @throws InvalidArgumentException
      * @throws MissingTableClassException
+     * @return Table|RepositoryInterface
      */
     public function load($alias, array $options = [])
     {
@@ -92,14 +88,11 @@ class RepositoryLocator implements LocatorInterface
             $label = Repository::labels($name);
             throw new MissingTableClassException(sprintf('Unmapped %s', $label));
         }
-        $table = TableRegistry::getTableLocator()->get($this->mapping[$name], $options + $this->config($alias));
+        $table = TableRegistry::getTableLocator()->get($this->mapping[$name], $options + $this->getConfig($alias));
         return $this->set($alias, $table);
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function setConfig($alias, $options = null)
+    public function setConfig($alias, $options = null): static
     {
         if (is_array($alias)) {
             $this->config = $alias;
@@ -107,53 +100,25 @@ class RepositoryLocator implements LocatorInterface
         }
         $name = $this->getRepositoryAliasFullyQualifiedInterfaceName($alias);
         if (isset($this->instances[$name])) {
-            throw new RuntimeException(sprintf(
-                'You cannot configure "%s", it has already been loaded.',
-                $alias
-            ));
+            throw new RuntimeException(sprintf('You cannot configure "%s", it has already been loaded.', $alias));
         }
         $this->config[$name] = $options;
         return $this;
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function getConfig($alias = null)
+    public function getConfig($alias = null): array
     {
         if ($alias === null) {
             return $this->config;
         }
         $name = $this->getRepositoryAliasFullyQualifiedInterfaceName($alias);
-        return isset($this->config[$name]) ? $this->config[$name] : [];
+        return $this->config[$name] ?? [];
     }
 
     /**
-     * @inheritDoc
+     * Either loads the table for the mapped alias of
      */
-    public function config($alias = null, $options = null)
-    {
-        deprecationWarning(
-            'RepositoryLocator::config() is deprecated. ' .
-            'Use getConfig()/setConfig() instead.' .
-            'Deprecation to ensure future CakePHP compatibility of this plugin in case the I changes.'
-        );
-        if ($alias !== null) {
-            if (is_string($alias) && $options === null) {
-                return $this->getConfig($alias);
-            }
-            $this->setConfig($alias, $options);
-        }
-        return $this->getConfig($alias);
-    }
-
-    /**
-     * Either loads the table for the mapped alias or
-     *
-     * @inheritDoc
-     * @return Table|RepositoryInterface
-     */
-    public function get($alias, array $options = [])
+    public function get($alias, array $options = []): Table
     {
         if (!$this->exists($alias)) {
             // lazy load the object corresponding with the alias
@@ -163,45 +128,34 @@ class RepositoryLocator implements LocatorInterface
         return $this->instances[$name];
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function exists($alias)
+    public function exists($alias): bool
     {
         $name = $this->getRepositoryAliasFullyQualifiedInterfaceName($alias);
         return array_key_exists($name, $this->instances);
     }
 
     /**
-     * @inheritDoc
      * @throws InvalidOAuthRepositoryException
      */
-    public function set($alias, Table $object)
+    public function set($alias, Table|\Cake\Datasource\RepositoryInterface $repository): Table
     {
         $name = $this->getRepositoryAliasFullyQualifiedInterfaceName($alias);
-        if (!$object instanceof RepositoryInterface) {
+        if (!$repository instanceof RepositoryInterface) {
             $label = Repository::labels($alias);
             throw new InvalidOAuthRepositoryException($label);
         }
-        return $this->instances[$name] = $object;
+        return $this->instances[$name] = $repository;
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function clear()
+    public function clear(): void
     {
         $this->instances = [];
         $this->config    = [];
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function remove($alias)
+    public function remove($alias): void
     {
         $name = $this->getRepositoryAliasFullyQualifiedInterfaceName($alias);
-        unset($this->instances[$name]);
-        unset($this->config[$name]);
+        unset($this->instances[$name], $this->config[$name]);
     }
 }

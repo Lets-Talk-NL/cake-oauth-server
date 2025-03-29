@@ -6,14 +6,14 @@ use Cake\Datasource\EntityInterface;
 use Cake\Event\Event;
 use Cake\ORM\Association\HasMany;
 use Cake\ORM\Table;
+use Exception;
+use function Functional\map;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 use League\OAuth2\Server\Entities\ScopeEntityInterface;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
 use OAuthServer\Model\Entity\Scope;
-use OAuthServer\Plugin;
-use function Functional\map;
-use Exception;
+use OAuthServer\OAuthServerPlugin;
 
 /**
  * OAuth 2.0 scopes table
@@ -30,13 +30,10 @@ use Exception;
  */
 class ScopesTable extends Table implements ScopeRepositoryInterface
 {
-    /**
-     * @inheritDoc
-     */
-    public function initialize(array $config)
+    public function initialize(array $config): void
     {
         parent::initialize($config);
-        $this->table('oauth_scopes');
+        $this->setTable('oauth_scopes');
         $this->setPrimaryKey('id');
         $this->setEntityClass('OAuthServer.Scope');
         $this->hasMany('AccessTokenScopes', [
@@ -47,9 +44,6 @@ class ScopesTable extends Table implements ScopeRepositoryInterface
         ]);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function getScopeEntityByIdentifier($identifier)
     {
         if ($scope = $this->find()->where([$this->aliasField($this->getPrimaryKey()) => $identifier])->first()) {
@@ -60,15 +54,12 @@ class ScopesTable extends Table implements ScopeRepositoryInterface
 
     /**
      * Dispatches OAuthServer.finalizeScopes event
-     *
-     * @param array $data
-     * @return Event
      */
     protected function dispatchFinalizeScopesEvent(array $data): Event
     {
         try {
             $event = new Event('OAuthServer.finalizeScopes', $this, $data);
-            return Plugin::instance()->getEventManager()->dispatch($event);
+            return OAuthServerPlugin::instance()->getEventManager()->dispatch($event);
         } catch (Exception $e) {
             if ($e instanceof OAuthServerException) {
                 throw $e;
@@ -82,9 +73,6 @@ class ScopesTable extends Table implements ScopeRepositoryInterface
     /**
      * Checks whether the given scopes variable obtained from the given event its data is still an array
      *
-     * @param Event $event
-     * @param mixed $scopes
-     * @return void
      * @throws OAuthServerException
      */
     protected function checkIsScopesArrayAfterEvent(Event $event, $scopes): void
@@ -100,12 +88,11 @@ class ScopesTable extends Table implements ScopeRepositoryInterface
      * Check whether the given scopes match with what is available in the scopes table
      *
      * @param ScopeEntityInterface[] $scopes
-     * @return void
      * @throws OAuthServerException
      */
     protected function checkScopesExist(array $scopes): void
     {
-        $scopes = map($scopes, fn(ScopeEntityInterface $scope) => $scope->getIdentifier());
+        $scopes = map($scopes, fn (ScopeEntityInterface $scope) => $scope->getIdentifier());
 
         /** @var Scope[] $dbEntities */
         $dbEntities = $this
@@ -114,7 +101,7 @@ class ScopesTable extends Table implements ScopeRepositoryInterface
             ->all()
             ->toArray();
 
-        $dbScopesFound = map($dbEntities, fn(Scope $dbEntity) => $dbEntity->id);
+        $dbScopesFound = map($dbEntities, fn (Scope $dbEntity) => $dbEntity->id);
 
         foreach ($scopes as $scope) {
             if (!in_array($scope, $dbScopesFound, true)) {
@@ -124,13 +111,13 @@ class ScopesTable extends Table implements ScopeRepositoryInterface
     }
 
     /**
-     * @inheritDoc
+     * @param mixed|null $userIdentifier
      * @throws OAuthServerException
      */
     public function finalizeScopes(array $scopes, $grantType, ClientEntityInterface $clientEntity, $userIdentifier = null)
     {
         $event          = $this->dispatchFinalizeScopesEvent([$scopes, $grantType, $clientEntity, $userIdentifier]);
-        $externalScopes = $event->getData(0);
+        $externalScopes = $event->getData('0');
         $this->checkIsScopesArrayAfterEvent($event, $externalScopes);
         $this->checkScopesExist($externalScopes);
         return $externalScopes;

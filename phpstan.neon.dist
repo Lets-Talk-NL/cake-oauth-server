@@ -1,0 +1,19 @@
+includes:
+    - vendor/letstalk/code-quality/php/static-analysis/cakephp-4.neon
+    - phpstan-baseline.neon
+
+parameters:
+    bootstrapFiles:
+        - vendor/cakephp/cakephp/src/functions.php
+    excludePaths:
+        - tests
+    ignoreErrors:
+        - '#no value type specified in iterable type#'
+        - '#Out of \d+ possible (param|return) types, only \d+ - \d+(.\d+)? % actually have it. Add more (param|return) types to get over \d+ %#'
+        - '#has parameter \$event with generic (class|interface) Cake\\Event\\Event(Interface)? but does not specify its types: TSubject#'
+        - '#has parameter \$.* with no type specified#'
+        - '#has no return type specified#'
+        - '#PHPDoc tag \@param for parameter \$.* with type array<.*> is incompatible with native type .*#'
+        - '#.*\b(Query|EventDispatcherInterface)\b.*does not specify its types: T(Subject)?#s'
+        - '#.*\EventDispatcherTrait\b.*does not specify its types: TSubject#s'
+        - '#Unknown parameter .* in call to method.*::get\(\)#'

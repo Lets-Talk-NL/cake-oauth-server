@@ -7,9 +7,6 @@ use Migrations\AbstractMigration;
  */
 class IncreaseClientIdLengths extends AbstractMigration
 {
-    /**
-     * @inheritDoc
-     */
     public function up()
     {
         $this->table('oauth_clients')
@@ -25,9 +22,6 @@ class IncreaseClientIdLengths extends AbstractMigration
              ->update();
     }
 
-    /**
-     * @inheritDoc
-     */
     public function down()
     {
         $this->table('oauth_clients')

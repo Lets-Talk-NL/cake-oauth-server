@@ -3,18 +3,15 @@
 namespace OAuthServer\Test\TestCase\Controller;
 
 use Cake\TestSuite\TestCase;
-use OAuthServer\Lib\Enum\Repository;
-use OAuthServer\Lib\Factory;
 use DateInterval;
 use InvalidArgumentException;
-use stdClass;
+use OAuthServer\Lib\Enum\Repository;
 use OAuthServer\Lib\Enum\Token;
+use OAuthServer\Lib\Factory;
+use stdClass;
 
 class FactoryTest extends TestCase
 {
-    /**
-     * @return void
-     */
     public function testClientId(): void
     {
         $clientId = Factory::clientId();
@@ -22,9 +19,6 @@ class FactoryTest extends TestCase
         $this->assertEquals(20, strlen($clientId));
     }
 
-    /**
-     * @return void
-     */
     public function testClientSecret(): void
     {
         $clientSecret = Factory::clientSecret();
@@ -32,9 +26,6 @@ class FactoryTest extends TestCase
         $this->assertEquals(40, strlen($clientSecret));
     }
 
-    /**
-     * @return void
-     */
     public function testDateInterval(): void
     {
         $dateInterval = Factory::dateInterval('P1M');
@@ -47,9 +38,6 @@ class FactoryTest extends TestCase
         Factory::dateInterval('NOTADURATIONSTRING');
     }
 
-    /**
-     * @return void
-     */
     public function testTimeToLiveIntervals(): void
     {
         $intervals = Factory::timeToLiveIntervals([Token::ACCESS_TOKEN => 'P1M']);
@@ -58,18 +46,12 @@ class FactoryTest extends TestCase
         $this->assertInstanceOf(DateInterval::class, $intervals[Token::ACCESS_TOKEN]);
     }
 
-    /**
-     * @return void
-     */
     public function testIntervalTimestamp(): void
     {
         $timestamp = Factory::intervalTimestamp(new DateInterval('PT1S'));
         $this->assertEquals(1, $timestamp);
     }
 
-    /**
-     * @return void
-     */
     public function testCompleteRepositoryMappingDefaults(): void
     {
         $repositories = Factory::completeRepositoryMapping([]);
@@ -80,9 +62,6 @@ class FactoryTest extends TestCase
         }
     }
 
-    /**
-     * @return void
-     */
     public function testCompleteRepositoryMappingCustomMappingInput(): void
     {
         $repositories = Factory::completeRepositoryMapping([Repository::ACCESS_TOKEN => 'AliasForNonExistingTableToTest']);

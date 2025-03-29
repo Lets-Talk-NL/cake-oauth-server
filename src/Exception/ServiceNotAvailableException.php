@@ -9,14 +9,8 @@ use Cake\Http\Exception\HttpException;
  */
 class ServiceNotAvailableException extends HttpException
 {
-    /**
-     * @inheritDoc
-     */
-    protected $_defaultCode = 503;
+    protected int $_defaultCode = 503;
 
-    /**
-     * @inheritDoc
-     */
     public function __construct($message = null, $code = null, $previous = null)
     {
         if (empty($message)) {

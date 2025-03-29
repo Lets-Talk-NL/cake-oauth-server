@@ -1,0 +1,185 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Class OAuthServer\\\\Lib\\\\Enum\\\\Extension extends generic class MyCLabs\\\\Enum\\\\Enum but does not specify its types\\: T$#"
+			count: 1
+			path: src/Lib/Enum/Extension.php
+
+		-
+			message: "#^Class OAuthServer\\\\Lib\\\\Enum\\\\GrantType extends generic class MyCLabs\\\\Enum\\\\Enum but does not specify its types\\: T$#"
+			count: 1
+			path: src/Lib/Enum/GrantType.php
+
+		-
+			message: "#^Class OAuthServer\\\\Lib\\\\Enum\\\\Repository extends generic class MyCLabs\\\\Enum\\\\Enum but does not specify its types\\: T$#"
+			count: 1
+			path: src/Lib/Enum/Repository.php
+
+		-
+			message: "#^Class OAuthServer\\\\Lib\\\\Enum\\\\Token extends generic class MyCLabs\\\\Enum\\\\Enum but does not specify its types\\: T$#"
+			count: 1
+			path: src/Lib/Enum/Token.php
+
+		-
+			message: "#^Parameter \\#1 \\$accessTokenRepository of class League\\\\OAuth2\\\\Server\\\\ResourceServer constructor expects League\\\\OAuth2\\\\Server\\\\Repositories\\\\AccessTokenRepositoryInterface, Cake\\\\ORM\\\\Table given\\.$#"
+			count: 1
+			path: src/Lib/Factory.php
+
+		-
+			message: "#^Parameter \\#1 \\$authCodeRepository of class League\\\\OAuth2\\\\Server\\\\Grant\\\\AuthCodeGrant constructor expects League\\\\OAuth2\\\\Server\\\\Repositories\\\\AuthCodeRepositoryInterface, Cake\\\\ORM\\\\Table given\\.$#"
+			count: 1
+			path: src/Lib/Factory.php
+
+		-
+			message: "#^Parameter \\#1 \\$clientRepository of class League\\\\OAuth2\\\\Server\\\\AuthorizationServer constructor expects League\\\\OAuth2\\\\Server\\\\Repositories\\\\ClientRepositoryInterface, Cake\\\\ORM\\\\Table given\\.$#"
+			count: 1
+			path: src/Lib/Factory.php
+
+		-
+			message: "#^Parameter \\#1 \\$refreshTokenRepository of class League\\\\OAuth2\\\\Server\\\\Grant\\\\RefreshTokenGrant constructor expects League\\\\OAuth2\\\\Server\\\\Repositories\\\\RefreshTokenRepositoryInterface, Cake\\\\ORM\\\\Table given\\.$#"
+			count: 1
+			path: src/Lib/Factory.php
+
+		-
+			message: "#^Parameter \\#1 \\$userRepository of class League\\\\OAuth2\\\\Server\\\\Grant\\\\PasswordGrant constructor expects League\\\\OAuth2\\\\Server\\\\Repositories\\\\UserRepositoryInterface, Cake\\\\ORM\\\\Table given\\.$#"
+			count: 1
+			path: src/Lib/Factory.php
+
+		-
+			message: "#^Parameter \\#2 \\$accessTokenRepository of class League\\\\OAuth2\\\\Server\\\\AuthorizationServer constructor expects League\\\\OAuth2\\\\Server\\\\Repositories\\\\AccessTokenRepositoryInterface, Cake\\\\ORM\\\\Table given\\.$#"
+			count: 1
+			path: src/Lib/Factory.php
+
+		-
+			message: "#^Parameter \\#2 \\$refreshTokenRepository of class League\\\\OAuth2\\\\Server\\\\Grant\\\\AuthCodeGrant constructor expects League\\\\OAuth2\\\\Server\\\\Repositories\\\\RefreshTokenRepositoryInterface, Cake\\\\ORM\\\\Table given\\.$#"
+			count: 1
+			path: src/Lib/Factory.php
+
+		-
+			message: "#^Parameter \\#2 \\$refreshTokenRepository of class League\\\\OAuth2\\\\Server\\\\Grant\\\\PasswordGrant constructor expects League\\\\OAuth2\\\\Server\\\\Repositories\\\\RefreshTokenRepositoryInterface, Cake\\\\ORM\\\\Table given\\.$#"
+			count: 1
+			path: src/Lib/Factory.php
+
+		-
+			message: "#^Parameter \\#3 \\$scopeRepository of class League\\\\OAuth2\\\\Server\\\\AuthorizationServer constructor expects League\\\\OAuth2\\\\Server\\\\Repositories\\\\ScopeRepositoryInterface, Cake\\\\ORM\\\\Table given\\.$#"
+			count: 1
+			path: src/Lib/Factory.php
+
+		-
+			message: "#^If condition is always true\\.$#"
+			count: 1
+			path: src/Model/Table/AccessTokensTable.php
+
+		-
+			message: "#^If condition is always true\\.$#"
+			count: 1
+			path: src/Model/Table/AuthCodesTable.php
+
+		-
+			message: "#^If condition is always true\\.$#"
+			count: 1
+			path: src/Model/Table/RefreshTokensTable.php
+
+		-
+			message: "#^Method OAuthServer\\\\Model\\\\Table\\\\ScopesTable\\:\\:dispatchFinalizeScopesEvent\\(\\) return type with generic class Cake\\\\Event\\\\Event does not specify its types\\: TSubject$#"
+			count: 1
+			path: src/Model/Table/ScopesTable.php
+
+		-
+			message: "#^Method OAuthServer\\\\Model\\\\Table\\\\ScopesTable\\:\\:dispatchFinalizeScopesEvent\\(\\) should return Cake\\\\Event\\\\Event but returns Cake\\\\Event\\\\EventInterface\\<\\$this\\(OAuthServer\\\\Model\\\\Table\\\\ScopesTable\\)\\>\\.$#"
+			count: 1
+			path: src/Model/Table/ScopesTable.php
+
+		-
+			message: "#^Unreachable statement \\- code above always terminates\\.$#"
+			count: 1
+			path: src/ORM/Locator/RepositoryLocator.php
+
+		-
+			message: "#^Method OAuthServer\\\\OauthServerPlugin\\:\\:instance\\(\\) should return OAuthServer\\\\OauthServerPlugin but returns Cake\\\\Core\\\\PluginInterface\\.$#"
+			count: 1
+			path: src/OauthServerPlugin.php
+
+		-
+			message: "#^Negated boolean expression is always false\\.$#"
+			count: 1
+			path: src/OauthServerPlugin.php
+
+		-
+			message: "#^Parameter \\#1 \\$identityProvider of static method OAuthServer\\\\Lib\\\\Factory\\:\\:openConnectIdTokenResponseType\\(\\) expects OpenIDConnectServer\\\\Repositories\\\\IdentityProviderInterface, Cake\\\\Datasource\\\\RepositoryInterface given\\.$#"
+			count: 1
+			path: src/OauthServerPlugin.php
+
+		-
+			message: "#^Static call to instance method OAuthServer\\\\Lib\\\\Enum\\\\Extension\\:\\:OPENID_CONNECT\\(\\)\\.$#"
+			count: 1
+			path: src/OauthServerPlugin.php
+		-
+			message: "#^Call to an undefined method Cake\\\\ORM\\\\Table\\|League\\\\OAuth2\\\\Server\\\\Repositories\\\\UserRepositoryInterface\\:\\:getUserEntityByIdentifier\\(\\)\\.$#"
+			count: 1
+			path: src/Controller/OAuthController.php
+
+		-
+			message: "#^Dead catch \\- Exception is never thrown in the try block\\.$#"
+			count: 1
+			path: src/Controller/OAuthController.php
+
+		-
+			message: "#^If condition is always true\\.$#"
+			count: 1
+			path: src/Controller/OAuthController.php
+
+		-
+			message: "#^Left side of && is always true\\.$#"
+			count: 1
+			path: src/Controller/OAuthController.php
+
+		-
+			message: "#^OAuthServer\\\\Controller\\\\OAuthController\\:\\:beforeFilter\\(\\) calls parent\\:\\:beforeFilter\\(\\) but OAuthServer\\\\Controller\\\\OAuthController does not extend any class\\.$#"
+			count: 1
+			path: src/Controller/OAuthController.php
+
+		-
+			message: "#^OAuthServer\\\\Controller\\\\OAuthController\\:\\:initialize\\(\\) calls parent\\:\\:initialize\\(\\) but OAuthServer\\\\Controller\\\\OAuthController does not extend any class\\.$#"
+			count: 1
+			path: src/Controller/OAuthController.php
+
+		-
+			message: "#^Unreachable statement \\- code above always terminates\\.$#"
+			count: 1
+			path: src/Controller/OAuthController.php
+
+		-
+			message: "#^Call to an undefined static method MyCLabs\\\\Enum\\\\Enum\\<mixed\\>\\:\\:enum\\(\\)\\.$#"
+			count: 1
+			path: src/Lib/Enum/Token.php
+
+		-
+			message: "#^Parameter \\#1 \\$accessTokenRepository of method League\\\\OAuth2\\\\Server\\\\Grant\\\\AbstractGrant\\:\\:setAccessTokenRepository\\(\\) expects League\\\\OAuth2\\\\Server\\\\Repositories\\\\AccessTokenRepositoryInterface, Cake\\\\ORM\\\\Table given\\.$#"
+			count: 1
+			path: src/Lib/Factory.php
+
+		-
+			message: "#^Parameter \\#1 \\$authCodeRepository of method League\\\\OAuth2\\\\Server\\\\Grant\\\\AbstractGrant\\:\\:setAuthCodeRepository\\(\\) expects League\\\\OAuth2\\\\Server\\\\Repositories\\\\AuthCodeRepositoryInterface, Cake\\\\ORM\\\\Table given\\.$#"
+			count: 1
+			path: src/Lib/Factory.php
+
+		-
+			message: "#^Parameter \\#1 \\$clientRepository of method League\\\\OAuth2\\\\Server\\\\Grant\\\\AbstractGrant\\:\\:setClientRepository\\(\\) expects League\\\\OAuth2\\\\Server\\\\Repositories\\\\ClientRepositoryInterface, Cake\\\\ORM\\\\Table given\\.$#"
+			count: 1
+			path: src/Lib/Factory.php
+
+		-
+			message: "#^Parameter \\#1 \\$refreshTokenRepository of method League\\\\OAuth2\\\\Server\\\\Grant\\\\AbstractGrant\\:\\:setRefreshTokenRepository\\(\\) expects League\\\\OAuth2\\\\Server\\\\Repositories\\\\RefreshTokenRepositoryInterface, Cake\\\\ORM\\\\Table given\\.$#"
+			count: 1
+			path: src/Lib/Factory.php
+
+		-
+			message: "#^Parameter \\#1 \\$scopeRepository of method League\\\\OAuth2\\\\Server\\\\Grant\\\\AbstractGrant\\:\\:setScopeRepository\\(\\) expects League\\\\OAuth2\\\\Server\\\\Repositories\\\\ScopeRepositoryInterface, Cake\\\\ORM\\\\Table given\\.$#"
+			count: 1
+			path: src/Lib/Factory.php
+
+		-
+			message: "#^Parameter \\#1 \\$userRepository of method League\\\\OAuth2\\\\Server\\\\Grant\\\\AbstractGrant\\:\\:setUserRepository\\(\\) expects League\\\\OAuth2\\\\Server\\\\Repositories\\\\UserRepositoryInterface, Cake\\\\ORM\\\\Table given\\.$#"
+			count: 1
+			path: src/Lib/Factory.php

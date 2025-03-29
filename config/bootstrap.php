@@ -11,4 +11,3 @@ if (!class_exists($appControllerAlias)) {
     $appControllerReal = Configure::read('OAuthServer.appController') ?: 'Cake\Controller\Controller'; // not making assumption about existence of AppController
     class_alias($appControllerReal, $appControllerAlias);
 }
-

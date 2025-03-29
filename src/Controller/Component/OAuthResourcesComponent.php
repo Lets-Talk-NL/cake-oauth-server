@@ -2,17 +2,18 @@
 
 namespace OAuthServer\Controller\Component;
 
-use Cake\Controller\Controller;
 use Cake\Controller\Component;
+use Cake\Controller\Controller;
 use Cake\Event\Event;
 use Cake\Event\EventDispatcherTrait;
+use Cake\Event\EventInterface;
 use League\OAuth2\Server\AuthorizationValidators\BearerTokenValidator;
+use LogicException;
 use OAuthServer\Auth\OAuthAuthenticate;
-use Cake\Http\Response;
 use OAuthServer\Lib\Data\Request\ResourceUser;
+use Psr\Http\Message\ResponseInterface;
 use ReflectionException;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use LogicException;
 
 /**
  * OAuth 2.0 resources process controller helper component
@@ -25,9 +26,6 @@ class OAuthResourcesComponent extends Component
 {
     use EventDispatcherTrait;
 
-    /**
-     * @var OAuthAuthenticate
-     */
     protected OAuthAuthenticate $authenticate;
 
     /**
@@ -36,17 +34,13 @@ class OAuthResourcesComponent extends Component
      * - `checkAuthIn` - Name of event for which initial auth checks should be done.
      *   Defaults to 'Controller.startup'. You can set it to 'Controller.initialize'
      *   if you want the check to be done before controller's beforeFilter() is run.
-     *
-     * @var array
      */
-    protected $_defaultConfig = [
+    protected array $_defaultConfig = [
         'checkAuthIn' => 'Controller.startup',
     ];
 
     /**
      * Current user data
-     *
-     * @var array|null
      */
     protected ?array $user = null;
 
@@ -59,33 +53,25 @@ class OAuthResourcesComponent extends Component
      */
     protected array $allowedActions = [];
 
-    /**
-     * @inheritDoc
-     */
-    public function initialize(array $config)
+    public function initialize(array $config): void
     {
         parent::initialize($config);
         $this->setEventManager($this->_registry->getController()->getEventManager());
-        $this->authenticate = new OAuthAuthenticate($this->_registry, []);
+        $this->authenticate = new OAuthAuthenticate();
     }
 
     /**
      * Callback for Controller.startup event.
-     *
-     * @param Event $event Event instance.
-     * @return Response|null
      */
-    public function startup(Event $event): ?Response
+    public function startup(EventInterface $event): ?ResponseInterface
     {
         return $this->authCheck($event);
     }
 
     /**
      * Events supported by this component.
-     *
-     * @return array
      */
-    public function implementedEvents()
+    public function implementedEvents(): array
     {
         return [
             'Controller.initialize' => 'authCheck',
@@ -109,7 +95,6 @@ class OAuthResourcesComponent extends Component
      * ```
      *
      * @param string|string[]|null $actions Controller action name or array of actions
-     * @return void
      * @link https://book.cakephp.org/3/en/controllers/components/authentication.html#making-actions-public
      */
     public function allow($actions = null): void
@@ -138,7 +123,6 @@ class OAuthResourcesComponent extends Component
      * to remove all items from the allowed list
      *
      * @param string|string[]|null $actions Controller action name or array of actions
-     * @return void
      * @see  \Cake\Controller\Component\AuthComponent::allow()
      * @link https://book.cakephp.org/3/en/controllers/components/authentication.html#making-actions-require-authorization
      */
@@ -177,11 +161,9 @@ class OAuthResourcesComponent extends Component
      * The auth check is done when event name is same as the one configured in
      * `checkAuthIn` config.
      *
-     * @param Event $event Event instance.
-     * @return Response|null
      * @throws ReflectionException
      */
-    public function authCheck(Event $event): ?Response
+    public function authCheck(EventInterface $event): ?ResponseInterface
     {
         if ($this->_config['checkAuthIn'] !== $event->getName()) {
             return null;
@@ -200,7 +182,7 @@ class OAuthResourcesComponent extends Component
         if ($this->_isAllowed($controller)) {
             return null;
         }
-        if ($user = $this->authenticate->authenticate($request, $response)) {
+        if ($user = $this->authenticate->authenticate($request)) {
             $this->user = $user;
             return null;
         }
@@ -214,7 +196,6 @@ class OAuthResourcesComponent extends Component
     /**
      * Will return a ResourceUser object if successfully authenticated for resources
      *
-     * @return ResourceUser|null
      * @throws LogicException
      * @see BearerTokenValidator::validateAuthorization
      */

@@ -23,16 +23,15 @@ class GrantType extends Enum
 {
     use EnumTrait;
 
-    const AUTHORIZATION_CODE = 'authorization_code';
-    const CLIENT_CREDENTIALS = 'client_credentials';
-    const IMPLICIT           = 'implicit';
-    const PASSWORD           = 'password';
-    const REFRESH_TOKEN      = 'refresh_token';
+    public const AUTHORIZATION_CODE = 'authorization_code';
+    public const CLIENT_CREDENTIALS = 'client_credentials';
+    public const IMPLICIT           = 'implicit';
+    public const PASSWORD           = 'password';
+    public const REFRESH_TOKEN      = 'refresh_token';
 
     /**
      * Maps grant types to their respective responsible objects
      *
-     * @param string|null $value
      * @return string|array
      */
     public static function classNames(?string $value = null)
@@ -50,7 +49,6 @@ class GrantType extends Enum
     /**
      * Maps grant types to normal names
      *
-     * @param string|null $value
      * @return string|array
      */
     public static function labels(?string $value = null)

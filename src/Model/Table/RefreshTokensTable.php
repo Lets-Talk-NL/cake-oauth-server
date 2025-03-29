@@ -3,13 +3,13 @@
 namespace OAuthServer\Model\Table;
 
 use Cake\Datasource\EntityInterface;
-use Cake\I18n\Time;
 use Cake\ORM\Association\BelongsTo;
 use Cake\ORM\Table;
+use DateTime;
 use League\OAuth2\Server\Entities\RefreshTokenEntityInterface;
 use League\OAuth2\Server\Repositories\RefreshTokenRepositoryInterface;
-use OAuthServer\Model\Entity\RefreshToken;
 use OAuthServer\Lib\Data\Entity\RefreshToken as RefreshTokenData;
+use OAuthServer\Model\Entity\RefreshToken;
 
 /**
  * OAuth 2.0 refresh tokens table
@@ -25,32 +25,23 @@ use OAuthServer\Lib\Data\Entity\RefreshToken as RefreshTokenData;
  */
 class RefreshTokensTable extends Table implements RefreshTokenRepositoryInterface
 {
-    /**
-     * @inheritDoc
-     */
-    public function initialize(array $config)
+    public function initialize(array $config): void
     {
         parent::initialize($config);
-        $this->table('oauth_refresh_tokens');
+        $this->setTable('oauth_refresh_tokens');
         $this->setEntityClass('OAuthServer.RefreshToken');
-        $this->primaryKey('refresh_token');
+        $this->setPrimaryKey('refresh_token');
         $this->belongsTo('AccessTokens', [
             'className'  => 'OAuthServer.AccessTokens',
             'foreignKey' => 'oauth_token',
         ]);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function getNewRefreshToken()
     {
         return new RefreshTokenData();
     }
 
-    /**
-     * @inheritDoc
-     */
     public function persistNewRefreshToken(RefreshTokenEntityInterface $refreshTokenEntity)
     {
         $entity = $this->newEntity([
@@ -61,9 +52,6 @@ class RefreshTokensTable extends Table implements RefreshTokenRepositoryInterfac
         $this->saveOrFail($entity);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function revokeRefreshToken($tokenId)
     {
         if ($entity = $this->get($tokenId)) {
@@ -71,16 +59,13 @@ class RefreshTokensTable extends Table implements RefreshTokenRepositoryInterfac
         }
     }
 
-    /**
-     * @inheritDoc
-     */
     public function isRefreshTokenRevoked($tokenId)
     {
         return !$this
             ->find()
             ->where([
                 $this->aliasField($this->getPrimaryKey()) => $tokenId,
-                $this->aliasField('expires') . ' >'       => Time::now()->getTimestamp(),
+                $this->aliasField('expires') . ' >'       => (new DateTime())->getTimestamp(),
             ])
             ->count();
     }

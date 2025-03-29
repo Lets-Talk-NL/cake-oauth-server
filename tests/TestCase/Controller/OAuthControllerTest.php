@@ -2,20 +2,17 @@
 
 namespace OAuthServer\Test\TestCase\Controller;
 
+use App\Controller\TestAppController;
+use App\Model\Table\UsersTable;
+use Cake\Core\Configure;
 use Cake\Event\EventList;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\IntegrationTestCase;
 use OAuthServer\Controller\OAuthController;
-use App\Controller\TestAppController;
-use App\Model\Table\UsersTable;
-use Cake\Core\Configure;
-use OAuthServer\Plugin;
+use OAuthServer\OAuthServerPlugin;
 
 class OAuthControllerTest extends IntegrationTestCase
 {
-    /**
-     * @inheritDoc
-     */
     public $fixtures = [
         'plugin.OAuthServer.Users',
         'plugin.OAuthServer.AccessTokenScopes',
@@ -27,9 +24,6 @@ class OAuthControllerTest extends IntegrationTestCase
         'plugin.OAuthServer.Scopes',
     ];
 
-    /**
-     * @inheritDoc
-     */
     public function setUp()
     {
         parent::setUp();
@@ -37,51 +31,34 @@ class OAuthControllerTest extends IntegrationTestCase
         TableRegistry::getTableLocator()->set('Users', new UsersTable()); // in TestAppController the AuthComponent is loaded by this alias
     }
 
-    /**
-     * @param string $path
-     * @param string $ext
-     * @return string
-     */
     private function url(string $path, ?string $ext = null): string
     {
-        $ext = $ext ? ".$ext" : '';
+        $ext = $ext ? ".{$ext}" : '';
         return $path . $ext;
     }
 
-    /**
-     * @return void
-     */
     public function testInstanceOfClassFromConfig(): void
     {
         $controller = new OAuthController();
         $this->assertInstanceOf(TestAppController::class, $controller);
     }
 
-    /**
-     * @return void
-     */
     public function testOAuthIndexRedirectsToAuthorize(): void
     {
         Configure::write('OAuthServer.indexRedirectDisabled', false);
         $this->session(['Auth.User.id' => 4]);
-        $this->get($this->url("/oauth") . "?client_id=CID&anything=at_all");
+        $this->get($this->url('/oauth') . '?client_id=CID&anything=at_all');
         $this->assertRedirect(['controller' => 'OAuth', 'action' => 'authorize', '?' => ['client_id' => 'CID', 'anything' => 'at_all']]);
     }
 
-    /**
-     * @return void
-     */
     public function testOAuthIndexRedirectsToDisabled(): void
     {
         Configure::write('OAuthServer.indexRedirectDisabled', true);
         $this->session(['Auth.User.id' => 4]);
-        $this->get($this->url("/oauth") . "?client_id=CID&anything=at_all");
+        $this->get($this->url('/oauth') . '?client_id=CID&anything=at_all');
         $this->assertResponseCode(404);
     }
 
-    /**
-     * @return void
-     */
     public function testAuthorizeInvalidParams(): void
     {
         $this->session(['Auth.User.id' => 4]);
@@ -90,9 +67,6 @@ class OAuthControllerTest extends IntegrationTestCase
         $this->assertResponseError();
     }
 
-    /**
-     * @return void
-     */
     public function testAuthorizeLoginRedirect(): void
     {
         $_GET         = ['client_id' => 'TEST', 'redirect_uri' => 'http://www.example.com', 'response_type' => 'code', 'scope' => 'test'];
@@ -101,9 +75,6 @@ class OAuthControllerTest extends IntegrationTestCase
         $this->assertRedirect(['controller' => 'Users', 'action' => 'login', 'plugin' => null, '?' => ['redirect' => $authorizeUrl]]);
     }
 
-    /**
-     * @return void
-     */
     public function testAuthorizationCodeWithOpenIdConnect(): void
     {
         $this->session(['Auth.User.id' => 4]);
@@ -142,12 +113,9 @@ class OAuthControllerTest extends IntegrationTestCase
         $this->assertResponseContains('"id_token":');
     }
 
-    /**
-     * @return void
-     */
     public function testAuthorizationCodeRefreshToken(): void
     {
-        $eventDispatcher = Plugin::instance()->getEventManager();
+        $eventDispatcher = OAuthServerPlugin::instance()->getEventManager();
         $eventDispatcher->trackEvents(true);
         $eventDispatcher->setEventList(new EventList());
 
@@ -210,9 +178,6 @@ class OAuthControllerTest extends IntegrationTestCase
         $this->assertEventFired('OAuthServer.finalizeScopes', $eventDispatcher);
     }
 
-    /**
-     * @return void
-     */
     public function testStoreCurrentUserAndDefaultAuth(): void
     {
         $this->session(['Auth.User.id' => 4]);
@@ -224,9 +189,6 @@ class OAuthControllerTest extends IntegrationTestCase
         $this->assertTrue($authCodes->exists(['client_id' => 'TEST', 'user_id' => 4]), 'Auth token in database was not correctly assigned');
     }
 
-    /**
-     * @return void
-     */
     public function testStatus(): void
     {
         $this->get('/oauth/status');
@@ -236,18 +198,15 @@ class OAuthControllerTest extends IntegrationTestCase
         $this->assertResponseContains('{');
     }
 
-    /**
-     * @return void
-     */
     public function testUserInfo(): void
     {
         // test without Authorization header
         $this->get('/oauth/userinfo.json');
         $this->assertResponseCode(401);
         // authorize user
-        $scope        = 'address email openid phone profile';
-        $redirectUri  = 'http://www.example.com';
-        $query        = [
+        $scope       = 'address email openid phone profile';
+        $redirectUri = 'http://www.example.com';
+        $query       = [
             'client_id' => 'TEST', 'redirect_uri' => $redirectUri, 'response_type' => 'code', 'scope' => $scope,
         ];
         $authorizeUrl = $this->url('/oauth/authorize') . '?' . http_build_query($query);

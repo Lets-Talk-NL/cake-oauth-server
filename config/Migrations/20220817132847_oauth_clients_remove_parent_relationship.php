@@ -8,9 +8,6 @@ use Migrations\AbstractMigration;
  */
 class OAuthClientsRemoveParentRelationship extends AbstractMigration
 {
-    /**
-     * @inheritDoc
-     */
     public function up()
     {
         $this->table('oauth_clients')
@@ -19,9 +16,6 @@ class OAuthClientsRemoveParentRelationship extends AbstractMigration
              ->update();
     }
 
-    /**
-     * @inheritDoc
-     */
     public function down()
     {
         $this->table('oauth_clients')

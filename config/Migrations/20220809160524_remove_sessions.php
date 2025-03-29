@@ -8,9 +8,6 @@ use Migrations\AbstractMigration;
  */
 class RemoveSessions extends AbstractMigration
 {
-    /**
-     * @inheritDoc
-     */
     public function up()
     {
         $this->table('oauth_access_tokens')
@@ -28,9 +25,6 @@ class RemoveSessions extends AbstractMigration
              ->drop();
     }
 
-    /**
-     * @inheritDoc
-     */
     public function down()
     {
         $this->table('oauth_access_tokens')

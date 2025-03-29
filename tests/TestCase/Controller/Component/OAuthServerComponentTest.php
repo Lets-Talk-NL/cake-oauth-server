@@ -3,20 +3,17 @@
 namespace OAuthServer\Test\TestCase\Controller\Component;
 
 use Cake\TestSuite\TestCase;
+use DateTimeImmutable;
 use OAuthServer\Controller\Component\OAuthServerComponent;
 use OAuthServer\Controller\OAuthController;
 use OAuthServer\Lib\Data\Entity\AccessToken;
 use OAuthServer\Lib\Data\Entity\User;
 use OAuthServer\Lib\Enum\Repository;
 use OAuthServer\Model\Table\ClientsTable;
-use DateTimeImmutable;
-use OAuthServer\Plugin;
+use OAuthServer\OAuthServerPlugin;
 
 class OAuthServerComponentTest extends TestCase
 {
-    /**
-     * @inheritDoc
-     */
     public $fixtures = [
         'plugin.OAuthServer.Clients',
         'plugin.OAuthServer.Users',
@@ -25,19 +22,10 @@ class OAuthServerComponentTest extends TestCase
         'plugin.OAuthServer.AccessTokenScopes',
     ];
 
-    /**
-     * @var OAuthServerComponent
-     */
     protected OAuthServerComponent $component;
 
-    /**
-     * @var ClientsTable
-     */
     protected ClientsTable $clientsTable;
 
-    /**
-     * @inheritDoc
-     */
     public function setUp()
     {
         parent::setUp();
@@ -47,9 +35,6 @@ class OAuthServerComponentTest extends TestCase
         $this->clientsTable = $this->component->loadRepository('Clients', Repository::CLIENT());
     }
 
-    /**
-     * @return void
-     */
     public function testGetSessionUserId(): void
     {
         $this->assertNull($this->component->getSessionUserId());
@@ -57,9 +42,6 @@ class OAuthServerComponentTest extends TestCase
         $this->assertEquals(5, $this->component->getSessionUserId());
     }
 
-    /**
-     * @return void
-     */
     public function testGetSessionUserData(): void
     {
         $this->assertNull($this->component->getSessionUserData());
@@ -67,9 +49,6 @@ class OAuthServerComponentTest extends TestCase
         $this->assertInstanceOf(User::class, $this->component->getSessionUserData());
     }
 
-    /**
-     * @return void
-     */
     public function testHasActiveAccessTokens(): void
     {
         $clientId = 'TEST';
@@ -80,7 +59,7 @@ class OAuthServerComponentTest extends TestCase
         $data->setIdentifier('123');
         $data->setClient($this->clientsTable->getClientEntity($clientId));
         $data->setUserIdentifier(1);
-        $data->setPrivateKey(Plugin::instance()->getPrivateKey());
+        $data->setPrivateKey(OAuthServerPlugin::instance()->getPrivateKey());
         $data->setExpiryDateTime(new DateTimeImmutable('+1 day'));
         $this->component->AccessTokens->persistNewAccessToken($data);
         $this->assertTrue($this->component->hasActiveAccessTokens($clientId, $userId));

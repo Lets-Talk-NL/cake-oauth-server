@@ -2,21 +2,28 @@
 
 namespace OAuthServer\Controller;
 
+use AllowDynamicProperties;
+use App\Controller\AppController;
+use Authentication\Controller\Component\AuthenticationComponent;
+use Cake\Controller\Controller;
 use Cake\Core\Configure;
 use Cake\Event\Event;
+use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
 use Cake\Http\Response;
+use Cake\Http\StreamFactory;
+use Exception;
+use Exception as PhpException;
+use League\OAuth2\Server\Exception\OAuthServerException;
 use OAuthServer\Controller\Component\OAuthResourcesComponent;
 use OAuthServer\Controller\Component\OAuthServerComponent;
 use OAuthServer\Exception\ServiceNotAvailableException;
 use OAuthServer\Model\Table\Interfaces\CheckTokenScopesInterface;
-use OAuthServer\Plugin;
+use OAuthServer\OAuthServerPlugin;
 use OpenIDConnectServer\Entities\ClaimSetInterface;
-use UnexpectedValueException;
-use League\OAuth2\Server\Exception\OAuthServerException;
-use Exception as PhpException;
+use Psr\Http\Message\ResponseInterface;
 use RuntimeException;
-use Cake\Controller\Controller;
+use UnexpectedValueException;
 
 /**
  * OAuth 2.0 process controller
@@ -28,12 +35,10 @@ use Cake\Controller\Controller;
  * @property OAuthResourcesComponent $OAuthResources
  * @mixin Controller
  */
+#[AllowDynamicProperties]
 class OAuthController extends AppController
 {
-    /**
-     * @inheritDoc
-     */
-    public function initialize()
+    public function initialize(): void
     {
         parent::initialize();
         $this->loadComponent('OAuthServer.OAuthServer');
@@ -42,29 +47,31 @@ class OAuthController extends AppController
         $this->OAuthResources->deny('userInfo');
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function beforeFilter(Event $event)
+    public function beforeFilter(EventInterface $event): ?Response
     {
         parent::beforeFilter($event);
-        if (!$this->components()->has('Auth')) {
-            throw new RuntimeException('OAuthServer requires Auth component to be loaded and properly configured');
+        if (!$this->components()->has('Authentication')) {
+            throw new RuntimeException('OAuthServer requires Authentication component to be loaded and properly configured');
         }
-        $this->Auth->allow(['oauth', 'accessToken', 'status', 'userInfo']);
-        $this->Auth->deny(['authorize']);
+        /** @var AuthenticationComponent $authenticationComponent */
+        $authenticationComponent = $this->components()->get('Authentication');
+        if ($this->components()->has('Authentication')) {
+            $authenticationComponent->setConfig('requireIdentity', false);
+            $authenticationComponent->allowUnauthenticated(['oauth', 'accessToken', 'status', 'userInfo']);
+        }
 
         // The UserInfo Endpoint SHOULD support the use of Cross Origin Resource Sharing (CORS) [CORS]
         // and or other methods as appropriate to enable Java Script Clients to access the endpoint.
-        if ($this->request->getParam('action') === 'userInfo') {
-            $this->response = $this->response->withHeader('Access-Control-Allow-Origin', '*');
+        if ($this->getRequest()->getParam('action') === 'userInfo') {
+            $this->setResponse($this->getResponse()->withHeader('Access-Control-Allow-Origin', '*'));
         }
+
+        return null;
     }
 
     /**
      * Index action handler
      *
-     * @return Response
      * @throws UnexpectedValueException
      * @throws NotFoundException
      */
@@ -78,8 +85,8 @@ class OAuthController extends AppController
         }
         return $this->redirect([
             'action' => 'authorize',
-            '_ext'   => $this->request->param('_ext'),
-            '?'      => $this->request->query,
+            '_ext'   => $this->getRequest()->getParam('_ext'),
+            '?'      => $this->getRequest()->getQuery(),
         ], 301);
     }
 
@@ -87,11 +94,10 @@ class OAuthController extends AppController
      * Authorize action handler
      *
      * @link https://www.rfc-editor.org/rfc/rfc6749.html#page-18
-     * @return Response
      * @TODO JSON seems to be the standard, but improve content type handling?
      * @TODO improve exception handling?
      */
-    public function authorize(): Response
+    public function authorize(): ResponseInterface
     {
         if (Configure::read('OAuthServer.serviceDisabled')) {
             throw new ServiceNotAvailableException();
@@ -99,7 +105,7 @@ class OAuthController extends AppController
 
         // Start authorization request
         $authServer  = $this->OAuthServer->getAuthorizationServer();
-        $authRequest = $authServer->validateAuthorizationRequest($this->request);
+        $authRequest = $authServer->validateAuthorizationRequest($this->getRequest());
         $clientId    = $authRequest->getClient()->getIdentifier();
 
         // 'redirect_uri' is considered an optional argument but grant implementations dont always
@@ -113,7 +119,7 @@ class OAuthController extends AppController
             $authRequest->setUser($user);
         }
 
-        $eventManager = Plugin::instance()->getEventManager();
+        $eventManager = OAuthServerPlugin::instance()->getEventManager();
         $eventManager->dispatch(new Event('OAuthServer.beforeAuthorize', $this));
 
         try {
@@ -122,29 +128,28 @@ class OAuthController extends AppController
                 $authRequest->setAuthorizationApproved(true);
                 $eventManager->dispatch(new Event('OAuthServer.afterAuthorize', $this));
                 // redirect
-                return $authServer->completeAuthorizationRequest($authRequest, $this->response);
+                return $authServer->completeAuthorizationRequest($authRequest, $this->getResponse());
             }
 
             // handle form posted UI confirmation of client authorization approval
-            if ($this->request->is('post')) {
+            if ($this->getRequest()->is('post')) {
                 $authRequest->setAuthorizationApproved(false);
-                if ($this->request->data('authorization') === 'Approve') {
+                if ($this->getRequest()->getData('authorization') === 'Approve') {
                     $authRequest->setAuthorizationApproved(true);
                     $eventManager->dispatch(new Event('OAuthServer.afterAuthorize', $this));
                 } else {
                     $eventManager->dispatch(new Event('OAuthServer.afterDeny', $this));
                 }
                 // redirect
-                return $authServer->completeAuthorizationRequest($authRequest, $this->response);
+                return $authServer->completeAuthorizationRequest($authRequest, $this->getResponse());
             }
         } catch (OAuthServerException $exception) {
             // @TODO this is a JSON response ..?
-            return $exception->generateHttpResponse($this->response);
+            return $exception->generateHttpResponse($this->getResponse());
         } catch (Exception $exception) {
-            $body = new Stream('php://temp', 'r+');
-            $body->write($exception->getMessage());
+            $body = (new StreamFactory())->createStream($exception->getMessage());
             // @TODO this is a blank page with an exception message?
-            return $response->withStatus(500)->withBody($body);
+            return $this->getResponse()->withStatus(500)->withBody($body);
         }
 
         $this->set('authRequest', $authRequest);
@@ -155,18 +160,17 @@ class OAuthController extends AppController
      * Access token action handler
      *
      * @link https://www.rfc-editor.org/rfc/rfc6749.html#page-23
-     * @return Response
      * @TODO JSON seems to be the standard, but improve content type handling?
      * @TODO improve exception handling?
      */
-    public function accessToken(): Response
+    public function accessToken(): ResponseInterface
     {
         if (Configure::read('OAuthServer.serviceDisabled')) {
             throw new ServiceNotAvailableException();
         }
         $authServer = $this->OAuthServer->getAuthorizationServer();
-        $request    = $this->request;
-        $response   = $this->response;
+        $request    = $this->getRequest();
+        $response   = $this->getResponse();
         try {
             return $authServer->respondToAccessTokenRequest($request, $response);
         } catch (OAuthServerException $exception) {
@@ -183,7 +187,6 @@ class OAuthController extends AppController
      *
      * NOTE: This is NOT the same as the OpenID Connect discovery endpoint but a custom status endpoint
      *
-     * @return Response
      * @TODO implement just enough parts of https://openid.net/specs/openid-connect-discovery-1_0.html to provide discovery without WebFinger?
      * @TODO JSON seems to be the standard, but improve content type handling?
      * @throws ServiceNotAvailableException
@@ -193,11 +196,11 @@ class OAuthController extends AppController
         if (Configure::read('OAuthServer.statusDisabled')) {
             throw new ServiceNotAvailableException();
         }
-        if (!$this->request->is('json')) {
+        if (!$this->getRequest()->is('json')) {
             throw new NotFoundException();
         }
-        $status = Plugin::instance()->getStatus();
-        return $this->response
+        $status = OAuthServerPlugin::instance()->getStatus();
+        return $this->getResponse()
             ->withType('json')
             ->withStringBody(json_encode($status));
     }
@@ -205,36 +208,35 @@ class OAuthController extends AppController
     /**
      * @link https://openid.net/specs/openid-connect-core-1_0.html#UserInfo
      * @link https://openid.net/specs/openid-connect-core-1_0.html#ScopeClaims
-     * @return Response
      */
-    public function userInfo(): Response
+    public function userInfo(): ResponseInterface
     {
         if (Configure::read('OAuthServer.userInfoDisabled')) {
             // does not fall under section 5.3.3.
             throw new ServiceNotAvailableException();
         }
-        if (!$this->request->is('json')) {
+        if (!$this->getRequest()->is('json')) {
             // does not fall under section 5.3.3.
             throw new NotFoundException();
         }
         try {
             $user = $this->OAuthResources->getUser();
         } catch (PhpException $e) {
-            return OAuthServerException::serverError('Erroneous attributes')->generateHttpResponse($this->response);
+            return OAuthServerException::serverError('Erroneous attributes')->generateHttpResponse($this->getResponse());
         }
-        if (!$userId = $user->getUserId()) {
+        if (!$user || !$userId = $user->getUserId()) {
             // When an error condition occurs, the UserInfo Endpoint returns an
             // Error Response as defined in Section 3 of OAuth 2.0 Bearer Token Usage [RFC6750]
-            return OAuthServerException::accessDenied('Unrecognised user')->generateHttpResponse($this->response);
+            return OAuthServerException::accessDenied('Unrecognised user')->generateHttpResponse($this->getResponse());
         }
         // Get user DTO using the user id from the access token
         if (!$entity = $this->OAuthServer->Users->getUserEntityByIdentifier($userId)) {
-            return OAuthServerException::accessDenied('User not found')->generateHttpResponse($this->response);
+            return OAuthServerException::accessDenied('User not found')->generateHttpResponse($this->getResponse());
         }
         // Does an additional scope validity check by token id (if AccessTokens repository has implemented the CheckTokenScopes interface)
         if ($this->OAuthServer->AccessTokens instanceof CheckTokenScopesInterface
             && !$this->OAuthServer->AccessTokens->hasScopes($user->getAccessTokenId(), ...$user->getScopes())) {
-            return OAuthServerException::accessDenied('Scope mismatch')->generateHttpResponse($this->response);
+            return OAuthServerException::accessDenied('Scope mismatch')->generateHttpResponse($this->getResponse());
         }
 
         $stdClaims        = [];
@@ -245,11 +247,11 @@ class OAuthController extends AppController
         if ($entity instanceof ClaimSetInterface) {
             $claims = $entity->getClaims();
         }
-        $claimExtractor = Plugin::instance()->createOpenIDConnectClaimExtractor();
+        $claimExtractor = OAuthServerPlugin::instance()->createOpenIDConnectClaimExtractor();
         $claims         = $claimExtractor->extract($user->getScopes(), $claims);
         $claims         = $stdClaims + $claims;
 
-        return $this->response
+        return $this->getResponse()
             ->withType('json')
             ->withStringBody(json_encode($claims));
     }

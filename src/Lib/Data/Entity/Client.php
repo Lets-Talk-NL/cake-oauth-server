@@ -14,9 +14,6 @@ class Client implements ClientEntityInterface
     use EntityTrait;
     use ClientTrait;
 
-    /**
-     * @param string $name
-     */
     public function setName(string $name)
     {
         $this->name = $name;
@@ -30,9 +27,6 @@ class Client implements ClientEntityInterface
         $this->redirectUri = $redirectUri;
     }
 
-    /**
-     * @param bool $isConfidential
-     */
     public function setIsConfidential(bool $isConfidential)
     {
         $this->isConfidential = $isConfidential;

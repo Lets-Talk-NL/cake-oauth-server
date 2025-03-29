@@ -2,10 +2,10 @@
 
 namespace OAuthServer\Model\Table;
 
+use Cake\Datasource\EntityInterface;
 use Cake\ORM\Association\BelongsTo;
 use Cake\ORM\Table;
 use OAuthServer\Model\Entity\AuthCodeScope;
-use Cake\Datasource\EntityInterface;
 
 /**
  * OAuth 2.0 authorisation codes to scopes table
@@ -22,13 +22,10 @@ use Cake\Datasource\EntityInterface;
  */
 class AuthCodeScopesTable extends Table
 {
-    /**
-     * @inheritDoc
-     */
-    public function initialize(array $config)
+    public function initialize(array $config): void
     {
         parent::initialize($config);
-        $this->table('oauth_auth_code_scopes');
+        $this->setTable('oauth_auth_code_scopes');
         $this->setPrimaryKey('id');
         $this->setEntityClass('OAuthServer.AuthCodeScope');
         $this->belongsTo('AuthCodes', [

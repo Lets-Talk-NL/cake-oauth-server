@@ -15,8 +15,6 @@ class Scope extends Entity
 {
     /**
      * Transforms the ORM Entity object into an OAuth 2.0 server DTO object
-     *
-     * @return ScopeData
      */
     public function transformToDTO(): ScopeData
     {

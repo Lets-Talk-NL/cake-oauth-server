@@ -13,14 +13,13 @@ use MyCLabs\Enum\Enum;
  */
 class Token extends Enum
 {
-    const AUTHENTICATION_TOKEN = 'authentication_token';
-    const ACCESS_TOKEN         = 'access_token';
-    const REFRESH_TOKEN        = 'refresh_token';
+    public const AUTHENTICATION_TOKEN = 'authentication_token';
+    public const ACCESS_TOKEN         = 'access_token';
+    public const REFRESH_TOKEN        = 'refresh_token';
 
     /**
      * Maps token types to readable names
      *
-     * @param string|null $value
      * @return string|array
      */
     public static function labels(?string $value = null)
@@ -30,7 +29,7 @@ class Token extends Enum
             static::ACCESS_TOKEN         => 'Access token',
             static::REFRESH_TOKEN        => 'Refresh token',
         ];
-        return static::enum($value, $labels);
+        return parent::enum($value, $labels);
     }
 
     /**

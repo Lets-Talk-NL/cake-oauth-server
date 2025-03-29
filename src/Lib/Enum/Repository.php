@@ -8,9 +8,9 @@ use League\OAuth2\Server\Repositories\ClientRepositoryInterface;
 use League\OAuth2\Server\Repositories\RefreshTokenRepositoryInterface;
 use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
 use League\OAuth2\Server\Repositories\UserRepositoryInterface;
-use OpenIDConnectServer\Repositories\IdentityProviderInterface;
 use MyCLabs\Enum\Enum;
 use OAuthServer\Lib\Enum\Traits\EnumTrait;
+use OpenIDConnectServer\Repositories\IdentityProviderInterface;
 
 /**
  * OAuth 2.0 repository requirements enumeration
@@ -27,18 +27,17 @@ class Repository extends Enum
 {
     use EnumTrait;
 
-    const ACCESS_TOKEN  = AccessTokenRepositoryInterface::class;
-    const AUTH_CODE     = AuthCodeRepositoryInterface::class;
-    const CLIENT        = ClientRepositoryInterface::class;
-    const REFRESH_TOKEN = RefreshTokenRepositoryInterface::class;
-    const SCOPE         = ScopeRepositoryInterface::class;
-    const USER          = UserRepositoryInterface::class;
-    const IDENTITY      = IdentityProviderInterface::class;
+    public const ACCESS_TOKEN  = AccessTokenRepositoryInterface::class;
+    public const AUTH_CODE     = AuthCodeRepositoryInterface::class;
+    public const CLIENT        = ClientRepositoryInterface::class;
+    public const REFRESH_TOKEN = RefreshTokenRepositoryInterface::class;
+    public const SCOPE         = ScopeRepositoryInterface::class;
+    public const USER          = UserRepositoryInterface::class;
+    public const IDENTITY      = IdentityProviderInterface::class;
 
     /**
      * Maps repositories to table locator alias defaults
      *
-     * @param string|null $value
      * @return string|array
      */
     public static function aliasDefaults(?string $value = null)
@@ -50,8 +49,8 @@ class Repository extends Enum
             static::REFRESH_TOKEN => 'OAuthServer.RefreshTokens',
             static::SCOPE         => 'OAuthServer.Scopes',
             // application implementation (plugin has no users implementation)
-            static::USER          => 'Users',
-            static::IDENTITY      => 'Users',
+            static::USER     => 'Users',
+            static::IDENTITY => 'Users',
         ];
         return static::enum($value, $aliases);
     }
@@ -59,7 +58,6 @@ class Repository extends Enum
     /**
      * Maps repositories to readable names
      *
-     * @param string|null $value
      * @return string|array
      */
     public static function labels(?string $value = null)

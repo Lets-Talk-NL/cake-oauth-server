@@ -7,26 +7,20 @@ use Cake\ORM\Locator\LocatorInterface;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
+use InvalidArgumentException;
 use OAuthServer\Exception\InvalidOAuthRepositoryException;
 use OAuthServer\Lib\Enum\Repository;
 use OAuthServer\ORM\Locator\RepositoryLocator;
-use UnexpectedValueException;
-use InvalidArgumentException;
 use RuntimeException;
+use UnexpectedValueException;
 
 class RepositoryLocatorTest extends TestCase
 {
     //region Properties
-    /**
-     * @var RepositoryLocator
-     */
     protected RepositoryLocator $locator;
     //endregion
 
     //region Lifecycle
-    /**
-     * @inheritDoc
-     */
     public function setUp()
     {
         parent::setUp();
@@ -36,9 +30,6 @@ class RepositoryLocatorTest extends TestCase
     //endregion
 
     //region Test misc
-    /**
-     * @return void
-     */
     public function testImplementation(): void
     {
         $this->assertInstanceOf(LocatorInterface::class, $this->locator);
@@ -46,9 +37,6 @@ class RepositoryLocatorTest extends TestCase
     //endregion
 
     //region Test methods
-    /**
-     * @return void
-     */
     public function testGetRepositoryAliasFullyQualifiedInterfaceName(): void
     {
         $this->expectException(UnexpectedValueException::class);
@@ -62,9 +50,6 @@ class RepositoryLocatorTest extends TestCase
         }
     }
 
-    /**
-     * @return void
-     */
     public function testLoad(): void
     {
         $this->expectException(UnexpectedValueException::class);
@@ -72,9 +57,6 @@ class RepositoryLocatorTest extends TestCase
         $this->assertInstanceOf(Repository::AUTH_CODE, $this->locator->load(Repository::AUTH_CODE));
     }
 
-    /**
-     * @return void
-     */
     public function testSetConfigOne(): void
     {
         $this->locator->setConfig(Repository::ACCESS_TOKEN(), ['random' => 'something']);
@@ -84,9 +66,6 @@ class RepositoryLocatorTest extends TestCase
         $this->locator->setConfig('nonexisting', ['random' => 'something']);
     }
 
-    /**
-     * @return void
-     */
     public function testSetConfigTwo(): void
     {
         $this->locator->get(Repository::ACCESS_TOKEN);
@@ -95,9 +74,6 @@ class RepositoryLocatorTest extends TestCase
         $this->locator->setConfig(Repository::ACCESS_TOKEN(), ['random' => 'something']);
     }
 
-    /**
-     * @return void
-     */
     public function testGetConfig(): void
     {
         $this->locator->setConfig(Repository::ACCESS_TOKEN, ['random' => 'something']);
@@ -107,18 +83,12 @@ class RepositoryLocatorTest extends TestCase
         $this->locator->getConfig('nonexisting');
     }
 
-    /**
-     * @return void
-     */
     public function testConfig(): void
     {
         $this->assertEquals($this->locator->config(Repository::ACCESS_TOKEN, ['random' => 'something']), ['random' => 'something']);
         $this->assertEquals($this->locator->config(Repository::ACCESS_TOKEN(), ['random' => 'something']), ['random' => 'something']);
     }
 
-    /**
-     * @return void
-     */
     public function testGet(): void
     {
         foreach (Repository::values() as $repository) {
@@ -127,9 +97,6 @@ class RepositoryLocatorTest extends TestCase
         }
     }
 
-    /**
-     * @return void
-     */
     public function testExists(): void
     {
         foreach (Repository::values() as $repository) {
@@ -140,9 +107,6 @@ class RepositoryLocatorTest extends TestCase
         }
     }
 
-    /**
-     * @return void
-     */
     public function testSet(): void
     {
         foreach (Repository::values() as $repository) {
@@ -154,18 +118,12 @@ class RepositoryLocatorTest extends TestCase
         $this->locator->set('nonexisting', new Table());
     }
 
-    /**
-     * @return void
-     */
     public function testSetInvalidRepositoryException(): void
     {
         $this->expectException(InvalidOAuthRepositoryException::class);
         $this->locator->set(Repository::ACCESS_TOKEN, new Table());
     }
 
-    /**
-     * @return void
-     */
     public function testClear(): void
     {
         $this->locator->clear();
@@ -175,9 +133,6 @@ class RepositoryLocatorTest extends TestCase
         }
     }
 
-    /**
-     * @return void
-     */
     public function testRemove(): void
     {
         foreach (Repository::values() as $repository) {

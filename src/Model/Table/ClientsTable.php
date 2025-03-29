@@ -2,12 +2,12 @@
 
 namespace OAuthServer\Model\Table;
 
+use Cake\Datasource\EntityInterface;
 use Cake\Event\Event;
 use Cake\ORM\Table;
-use Cake\Datasource\EntityInterface;
+use League\OAuth2\Server\Repositories\ClientRepositoryInterface;
 use OAuthServer\Lib\Factory;
 use OAuthServer\Model\Entity\Client;
-use League\OAuth2\Server\Repositories\ClientRepositoryInterface;
 
 /**
  * OAuth 2.0 clients table
@@ -21,16 +21,13 @@ use League\OAuth2\Server\Repositories\ClientRepositoryInterface;
  */
 class ClientsTable extends Table implements ClientRepositoryInterface
 {
-    /**
-     * @inheritDoc
-     */
-    public function initialize(array $config)
+    public function initialize(array $config): void
     {
         parent::initialize($config);
-        $this->table('oauth_clients');
+        $this->setTable('oauth_clients');
         $this->setEntityClass('OAuthServer.Client');
-        $this->primaryKey('id');
-        $this->displayField('name');
+        $this->setPrimaryKey('id');
+        $this->setDisplayField('name');
     }
 
     /**
@@ -38,7 +35,7 @@ class ClientsTable extends Table implements ClientRepositoryInterface
      * @param Client $client Client entity
      * @return void
      */
-    public function beforeSave(Event $event, Client $client)
+    public function beforeSave(\Cake\Event\EventInterface $event, Client $client)
     {
         if ($client->isNew()) {
             $client->id            = Factory::clientId();
@@ -46,21 +43,16 @@ class ClientsTable extends Table implements ClientRepositoryInterface
         }
     }
 
-    /**
-     * @inheritDoc
-     */
     public function getClientEntity($clientIdentifier)
     {
-        /** @var Client $client */
-        if ($client = $this->find()->where([$this->aliasField($this->getPrimaryKey()) => $clientIdentifier])->first()) {
+        /** @var Client|null $client */
+        $client = $this->find()->where([$this->aliasField($this->getPrimaryKey()) => $clientIdentifier])->first();
+        if ($client) {
             return $client->transformToDTO();
         }
         return null;
     }
 
-    /**
-     * @inheritDoc
-     */
     public function validateClient($clientIdentifier, $clientSecret, $grantType)
     {
         $event = new Event('OAuthServer.validateClient', $this, [$clientIdentifier, $clientSecret, $grantType]);
@@ -68,8 +60,9 @@ class ClientsTable extends Table implements ClientRepositoryInterface
         if ($event->isStopped()) {
             return false;
         }
-        /** @var Client $entity */
-        if (!$entity = $this->find()->where([$this->aliasField($this->getPrimaryKey()) => $clientIdentifier])->first()) {
+        /** @var Client|null $entity */
+        $entity = $this->find()->where([$this->aliasField($this->getPrimaryKey()) => $clientIdentifier])->first();
+        if (!$entity) {
             return false;
         }
         if ($entity->client_secret !== $clientSecret) {

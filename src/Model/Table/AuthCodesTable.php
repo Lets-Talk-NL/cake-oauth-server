@@ -5,12 +5,12 @@ namespace OAuthServer\Model\Table;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\Association\HasMany;
 use Cake\ORM\Table;
+use function Functional\map;
 use League\OAuth2\Server\Entities\AuthCodeEntityInterface;
 use League\OAuth2\Server\Entities\ScopeEntityInterface;
 use League\OAuth2\Server\Repositories\AuthCodeRepositoryInterface;
-use OAuthServer\Model\Entity\AuthCode;
 use OAuthServer\Lib\Data\Entity\AuthCode as AuthCodeData;
-use function Functional\map;
+use OAuthServer\Model\Entity\AuthCode;
 
 /**
  * OAuth 2.0 authorisation codes table
@@ -26,15 +26,12 @@ use function Functional\map;
  */
 class AuthCodesTable extends Table implements AuthCodeRepositoryInterface
 {
-    /**
-     * @inheritDoc
-     */
-    public function initialize(array $config)
+    public function initialize(array $config): void
     {
         parent::initialize($config);
-        $this->table('oauth_auth_codes');
+        $this->setTable('oauth_auth_codes');
         $this->setEntityClass('OAuthServer.AuthCode');
-        $this->primaryKey('code');
+        $this->setPrimaryKey('code');
         $this->hasMany('AuthCodeScopes', [
             'className'        => 'OAuthServer.AuthCodeScopes',
             'foreignKey'       => 'auth_code',
@@ -44,17 +41,11 @@ class AuthCodesTable extends Table implements AuthCodeRepositoryInterface
         ]);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function getNewAuthCode()
     {
         return new AuthCodeData();
     }
 
-    /**
-     * @inheritDoc
-     */
     public function persistNewAuthCode(AuthCodeEntityInterface $authCodeEntity)
     {
         $entity = $this->newEntity([
@@ -63,7 +54,7 @@ class AuthCodesTable extends Table implements AuthCodeRepositoryInterface
             'client_id'        => $authCodeEntity->getClient()->getIdentifier(),
             'user_id'          => $authCodeEntity->getUserIdentifier(),
             'redirect_uri'     => $authCodeEntity->getRedirectUri(),
-            'auth_code_scopes' => map($authCodeEntity->getScopes(), fn(ScopeEntityInterface $scope) => [
+            'auth_code_scopes' => map($authCodeEntity->getScopes(), fn (ScopeEntityInterface $scope) => [
                 'oauth_token' => $authCodeEntity->getIdentifier(),
                 'scope_id'    => $scope->getIdentifier(),
             ]),
@@ -71,9 +62,6 @@ class AuthCodesTable extends Table implements AuthCodeRepositoryInterface
         $this->saveOrFail($entity);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function revokeAuthCode($codeId)
     {
         if ($entity = $this->get($codeId)) {
@@ -81,9 +69,6 @@ class AuthCodesTable extends Table implements AuthCodeRepositoryInterface
         }
     }
 
-    /**
-     * @inheritDoc
-     */
     public function isAuthCodeRevoked($codeId)
     {
         return !$this

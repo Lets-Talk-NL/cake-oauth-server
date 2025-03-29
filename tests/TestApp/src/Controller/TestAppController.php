@@ -10,10 +10,7 @@ use Cake\Controller\Controller;
  */
 class TestAppController extends Controller
 {
-    /**
-     * @inheritDoc
-     */
-    public function initialize()
+    public function initialize(): void
     {
         $this->loadComponent('Auth', [
             'authenticate' => [
@@ -23,7 +20,7 @@ class TestAppController extends Controller
                 'OAuthServer.OAuth',
                 'Form',
             ],
-            'loginAction'  => [
+            'loginAction' => [
                 'controller' => 'Users',
                 'action'     => 'login',
                 'plugin'     => null,

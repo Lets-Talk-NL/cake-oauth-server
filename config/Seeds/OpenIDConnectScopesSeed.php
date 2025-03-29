@@ -1,6 +1,6 @@
 <?php
 
-use Migrations\AbstractSeed;
+use Migrations\BaseSeed;
 
 /**
  * OpenIDConnectScopes seed.
@@ -12,12 +12,9 @@ use Migrations\AbstractSeed;
  *
  * @link https://openid.net/specs/openid-connect-core-1_0.html#ScopeClaims
  */
-class OpenIDConnectScopesSeed extends AbstractSeed
+class OpenIDConnectScopesSeed extends BaseSeed
 {
-    /**
-     * @inheritDoc
-     */
-    public function run()
+    public function run(): void
     {
         $table = $this->table('oauth_scopes');
         $table->insert([

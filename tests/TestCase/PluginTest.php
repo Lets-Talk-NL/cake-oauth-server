@@ -4,6 +4,7 @@ namespace OAuthServer\Test\TestCase\Controller;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use DateInterval;
 use League\OAuth2\Server\AuthorizationServer;
 use League\OAuth2\Server\CryptKey;
 use League\OAuth2\Server\Grant\GrantTypeInterface;
@@ -12,82 +13,54 @@ use League\OAuth2\Server\ResourceServer;
 use OAuthServer\Lib\Enum\Extension;
 use OAuthServer\Lib\Enum\Repository;
 use OAuthServer\Lib\Enum\Token;
+use OAuthServer\OAuthServerPlugin;
 use OAuthServer\ORM\Locator\RepositoryLocator;
-use OAuthServer\Plugin;
-use DateInterval;
 
 /**
  * Based off the default config
  */
 class PluginTest extends TestCase
 {
-    /**
-     * @var Plugin
-     */
-    protected Plugin $plugin;
+    protected OAuthServerPlugin $plugin;
 
-    /**
-     * @inheritDoc
-     */
     public function setUp()
     {
         parent::setUp();
-        $this->plugin = new Plugin([]);
+        $this->plugin = new OAuthServerPlugin([]);
     }
 
-    /**
-     * @return void
-     */
     public function testInstance(): void
     {
-        $this->assertInstanceOf(Plugin::class, Plugin::instance());
+        $this->assertInstanceOf(OAuthServerPlugin::class, OAuthServerPlugin::instance());
     }
 
-    /**
-     * @return void
-     */
     public function testInitialize(): void
     {
         $this->plugin->initialize();
         $this->assertInstanceOf(RepositoryLocator::class, $this->plugin->getTableLocator());
     }
 
-    /**
-     * @return void
-     */
     public function testInitializeTableLocator(): void
     {
         $this->plugin->initializeTableLocator();
         $this->assertInstanceOf(RepositoryLocator::class, $this->plugin->getTableLocator());
     }
 
-    /**
-     * @return void
-     */
     public function testGetPrivateKey(): void
     {
         $this->assertInstanceOf(CryptKey::class, $this->plugin->getPrivateKey());
     }
 
-    /**
-     * @return void
-     */
     public function testGetPublicKey(): void
     {
         $this->assertInstanceOf(CryptKey::class, $this->plugin->getPublicKey());
     }
 
-    /**
-     * @return void
-     */
     public function testGetEncryptionKey(): void
     {
         $this->assertInternalType('string', $this->plugin->getEncryptionKey());
     }
 
-    /**
-     * @return void
-     */
     public function testGetDefaultScope(): void
     {
         $defaultScope = $this->plugin->getDefaultScope();
@@ -95,9 +68,6 @@ class PluginTest extends TestCase
         $this->assertEquals('', $defaultScope);
     }
 
-    /**
-     * @return void
-     */
     public function testGetGrantObjects(): void
     {
         $grantObjects = $this->plugin->getGrantObjects();
@@ -107,25 +77,16 @@ class PluginTest extends TestCase
         }
     }
 
-    /**
-     * @return void
-     */
     public function testGetConfiguredExtensions(): void
     {
         $this->assertEquals(array_values(Extension::toArray()), Configure::read('OAuthServer.extensions'));
     }
 
-    /**
-     * @return void
-     */
     public function testHasConfiguredExtension(): void
     {
         $this->assertTrue($this->plugin->hasConfiguredExtension(Extension::OPENID_CONNECT()));
     }
 
-    /**
-     * @return void
-     */
     public function testGetAuthorizationServer(): void
     {
         $extensions = Configure::read('OAuthServer.extensions');
@@ -135,17 +96,11 @@ class PluginTest extends TestCase
         $this->assertInstanceOf(AuthorizationServer::class, $this->plugin->getAuthorizationServer());
     }
 
-    /**
-     * @return void
-     */
     public function testGetResourceServer(): void
     {
         $this->assertInstanceOf(ResourceServer::class, $this->plugin->getResourceServer());
     }
 
-    /**
-     * @return void
-     */
     public function testGetRepository(): void
     {
         foreach (Repository::values() as $enum) {
@@ -154,9 +109,6 @@ class PluginTest extends TestCase
         }
     }
 
-    /**
-     * @return void
-     */
     public function testGetTokensTimeToLive(): void
     {
         $ttl = $this->plugin->getTokensTimeToLiveIntervals();
@@ -167,9 +119,6 @@ class PluginTest extends TestCase
         }
     }
 
-    /**
-     * @return void
-     */
     public function testGetStatus(): void
     {
         $status = $this->plugin->getStatus();
@@ -179,9 +128,6 @@ class PluginTest extends TestCase
         }
     }
 
-    /**
-     * @return void
-     */
     public function testGetPath(): void
     {
         $this->assertInternalType('string', $this->plugin->getPath());

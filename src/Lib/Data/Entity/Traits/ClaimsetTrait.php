@@ -9,23 +9,13 @@ namespace OAuthServer\Lib\Data\Entity\Traits;
  */
 trait ClaimsetTrait
 {
-    /**
-     * @var array
-     */
     protected array $claims;
 
-    /**
-     * @return array
-     */
     public function getClaims(): array
     {
         return $this->claims;
     }
 
-    /**
-     * @param array $claims
-     * @return void
-     */
     public function setClaims(array $claims): void
     {
         $this->claims = $claims;

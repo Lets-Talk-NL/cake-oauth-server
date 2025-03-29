@@ -14,12 +14,11 @@ class Extension extends Enum
 {
     use EnumTrait;
 
-    const OPENID_CONNECT = 'openid_connect';
+    public const OPENID_CONNECT = 'openid_connect';
 
     /**
      * Maps extensions to normal names
      *
-     * @param string|null $value
      * @return string|array
      */
     public static function labels(?string $value = null)

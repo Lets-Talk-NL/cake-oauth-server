@@ -2,18 +2,14 @@
 
 namespace OAuthServer\Auth;
 
-use Cake\Auth\BaseAuthenticate;
+use Cake\Event\Event;
+use Cake\Event\EventManager;
 use Cake\Log\Log;
-use Cake\Network\Request;
-use Cake\Network\Response;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use League\OAuth2\Server\ResourceServer;
 use OAuthServer\Exception\Exception;
-use Cake\Event\Event;
-use Cake\Event\EventManager;
-use OAuthServer\Plugin;
+use OAuthServer\OAuthServerPlugin;
 use Psr\Http\Message\ServerRequestInterface;
-use Cake\Controller\ComponentRegistry;
 
 /**
  * The CakePHP OAuth 2.0 Authenticate object
@@ -22,19 +18,15 @@ use Cake\Controller\ComponentRegistry;
  * of the accessible resources (resource server section of the application)
  * that are made available to the access token
  */
-class OAuthAuthenticate extends BaseAuthenticate
+class OAuthAuthenticate
 {
     /**
      * OAuth 2.0 resource server object
-     *
-     * @var ResourceServer
      */
     protected ResourceServer $_resourceServer;
 
     /**
      * Exception that was thrown by OAuth 2.0 server
-     *
-     * @var OAuthServerException|null
      */
     protected ?OAuthServerException $_exception;
 
@@ -51,28 +43,20 @@ class OAuthAuthenticate extends BaseAuthenticate
         'oauth_scopes',
     ];
 
-    /**
-     * @inheritDoc
-     */
-    public function __construct(ComponentRegistry $registry, array $config)
+    public function __construct()
     {
-        parent::__construct($registry, $config);
-        $this->_resourceServer = Plugin::instance()->getResourceServer();
+        $this->_resourceServer = OAuthServerPlugin::instance()->getResourceServer();
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function authenticate(Request $request, Response $response)
+    public function authenticate(ServerRequestInterface $request)
     {
         return $this->getUser($request);
     }
 
     /**
-     * @inheritDoc
      * @throws Exception
      */
-    public function getUser(Request $request)
+    public function getUser(ServerRequestInterface $request)
     {
         if (!$request = $this->getValidatedRequestWithAuthAttributes($request)) {
             return false;
@@ -88,7 +72,6 @@ class OAuthAuthenticate extends BaseAuthenticate
      * Validate and add authentication attributes to the given request.
      * Will set exception to $this->_exception if thrown from validation of request
      *
-     * @param ServerRequestInterface $request
      * @return ServerRequestInterface|null Will return modified request or null if failed to validate
      */
     public function getValidatedRequestWithAuthAttributes(ServerRequestInterface $request): ?ServerRequestInterface
@@ -107,9 +90,8 @@ class OAuthAuthenticate extends BaseAuthenticate
     /**
      * Extract request attributes to return as an identified OAuth 2.0 user
      *
-     * @param ServerRequestInterface $request
-     * @return array e.g. ['oauth_client_id' => '123', ...]
      * @throws Exception
+     * @return array e.g. ['oauth_client_id' => '123', ...]
      */
     public function getUserIdentifiableAttributesFromRequest(ServerRequestInterface $request): array
     {
@@ -123,16 +105,14 @@ class OAuthAuthenticate extends BaseAuthenticate
     /**
      * Throw event for any required user data hooks/mutations
      *
-     * @param ServerRequestInterface  $request
-     * @param array                  &$user
      * @return bool False if stopped
      */
     public function dispatchGetUserEvent(ServerRequestInterface $request, array &$user): bool
     {
         $event = new Event('OAuthServer.getUser', $request, $user);
         EventManager::instance()->dispatch($event);
-        if (is_array($event->result)) {
-            $user = $event->result;
+        if (is_array($event->getResult())) {
+            $user = $event->getResult();
         }
         if ($event->isStopped()) {
             $msg = 'event %s was stopped for user %s';
@@ -144,8 +124,6 @@ class OAuthAuthenticate extends BaseAuthenticate
 
     /**
      * Return exception that was thrown by OAuth 2.0 server
-     *
-     * @return OAuthServerException|null
      */
     public function getException(): ?OAuthServerException
     {

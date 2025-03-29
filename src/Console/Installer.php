@@ -16,9 +16,9 @@ class Installer
      * Run after running a composer install, useful for initializing the package
      * with permissions and etcetera
      *
-     * @param Event $event The composer event object.
+     * @param Event $event the composer event object
+     * @throws Exception exception raised by validator
      * @return void
-     * @throws Exception Exception raised by validator.
      */
     public static function postInstall(Event $event)
     {
@@ -37,13 +37,12 @@ class Installer
      *
      * @param string      $path  File/folder path
      * @param string      $perms In bits e.g. '1100000000' (rw- --- ---)
-     * @param IOInterface $io    IO interface to write to console.
-     * @return void
+     * @param IOInterface $io    IO interface to write to console
      */
     protected static function setPathPermissions(string $path, string $perms, IOInterface $io): void
     {
         $perms        = bindec($perms);
-        $currentPerms = fileperms($path) & 0777;
+        $currentPerms = fileperms($path) & 0o777;
         if ($currentPerms == $perms) {
             return;
         }
@@ -57,10 +56,6 @@ class Installer
 
     /**
      * Set example key file permissions
-     *
-     * @param string      $rootDir
-     * @param IOInterface $io
-     * @return void
      */
     public static function setExampleKeyPermissionsForTest(string $rootDir, IOInterface $io): void
     {

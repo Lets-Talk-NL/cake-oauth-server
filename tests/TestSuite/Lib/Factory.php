@@ -11,9 +11,6 @@ class Factory
 {
     /**
      * Builds the Migrations object for this plugin
-     *
-     * @param string $connection
-     * @return Migrations
      */
     public static function migrations(string $connection): Migrations
     {

@@ -8,9 +8,6 @@ use Migrations\AbstractMigration;
  */
 class CorrectIdentifierLength extends AbstractMigration
 {
-    /**
-     * @inheritDoc
-     */
     public function up()
     {
         $this->table('oauth_access_tokens')
@@ -45,9 +42,6 @@ class CorrectIdentifierLength extends AbstractMigration
              ->update();
     }
 
-    /**
-     * @inheritDoc
-     */
     public function down()
     {
         $this->table('oauth_access_tokens')

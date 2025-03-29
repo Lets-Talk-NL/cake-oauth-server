@@ -7,9 +7,6 @@ use Migrations\AbstractMigration;
  */
 class OauthInitialMigration extends AbstractMigration
 {
-    /**
-     * @inheritdoc
-     */
     public function up()
     {
         $this->table('oauth_access_tokens', ['id' => false, 'primary_key' => ['oauth_token']])
@@ -68,9 +65,6 @@ class OauthInitialMigration extends AbstractMigration
              ->create();
     }
 
-    /**
-     * @inheritdoc
-     */
     public function down()
     {
         $this->table('oauth_access_tokens')->drop()->save();

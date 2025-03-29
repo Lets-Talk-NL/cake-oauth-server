@@ -25,14 +25,14 @@ require_once ROOT . DS . 'vendor' . DS . 'autoload.php';
 require_once CORE_PATH . 'config' . DS . 'bootstrap.php';
 
 // Setup test application namespace for the integration tests app that goes in ROOT/tests/test_app
-$loader = new \Cake\Core\ClassLoader();
+$loader = new Cake\Core\ClassLoader();
 $loader->register();
 $loader->addNamespace('App', APP);
 
 // Setup TestApp application configuration
 $config = [
-    'debug'   => true,
-    'App'     => [
+    'debug' => true,
+    'App'   => [
         'namespace'     => 'App',
         'encoding'      => 'UTF-8',
         'defaultLocale' => 'en_US',
@@ -55,16 +55,16 @@ $config = [
         'OAuthServer' => ROOT . DS,
         'Migrations'  => ROOT . 'vendor' . DS . 'cakephp' . DS . 'migrations' . DS,
     ],
-    'Error'   => [
-        'exceptionRenderer' => \App\Error\ExceptionRenderer::class,
+    'Error' => [
+        'exceptionRenderer' => App\Error\ExceptionRenderer::class,
     ],
 ];
 
-\Cake\Core\Configure::write($config);
+Cake\Core\Configure::write($config);
 
 // setup test application cache
 Cake\Cache\Cache::setConfig([
-    '_cake_core_'  => [
+    '_cake_core_' => [
         'engine'    => 'File',
         'prefix'    => 'cake_core_',
         'serialize' => true,
@@ -79,26 +79,26 @@ Cake\Cache\Cache::setConfig([
 ]);
 
 // Load plugin default configuration
-\Cake\Core\Configure::write(include ROOT . DS . 'config' . DS . 'plugin.default.php');
+Cake\Core\Configure::write(include ROOT . DS . 'config' . DS . 'plugin.default.php');
 
 // Set plugin OAuthController AppController alias to the controller from the test application
-\Cake\Core\Configure::write('OAuthServer.appController', 'App\Controller\TestAppController');
+Cake\Core\Configure::write('OAuthServer.appController', 'App\Controller\TestAppController');
 
 // PHP settings
 error_reporting(E_ALL & ~E_USER_DEPRECATED);
-ini_set('intl.default_locale', \Cake\Core\Configure::read('App.defaultLocale'));
-mb_internal_encoding(\Cake\Core\Configure::read('App.encoding'));
+ini_set('intl.default_locale', Cake\Core\Configure::read('App.defaultLocale'));
+mb_internal_encoding(Cake\Core\Configure::read('App.encoding'));
 date_default_timezone_set('UTC');
 
 // Setup sqlite test database configuration
 if (!getenv('db_dsn')) {
     putenv('db_dsn=sqlite:///:memory:');
 }
-\Cake\Datasource\ConnectionManager::setConfig('test', ['url' => getenv('db_dsn')]);
-\Cake\Datasource\ConnectionManager::setConfig('test_migrations', ['url' => 'sqlite:///:memory:']);
-\Cake\Datasource\ConnectionManager::alias('test', 'default');
+Cake\Datasource\ConnectionManager::setConfig('test', ['url' => getenv('db_dsn')]);
+Cake\Datasource\ConnectionManager::setConfig('test_migrations', ['url' => 'sqlite:///:memory:']);
+Cake\Datasource\ConnectionManager::alias('test', 'default');
 
 // Load test application plugins (including self load)
-\Cake\Core\Plugin::load('Migrations');
-\Cake\Core\Plugin::load('OAuthServer', ['bootstrap' => true, 'routes' => true]);
-\Cake\Core\Plugin::routes('OAuthServer');
+Cake\Core\Plugin::load('Migrations');
+Cake\Core\Plugin::load('OAuthServer', ['bootstrap' => true, 'routes' => true]);
+Cake\Core\Plugin::routes('OAuthServer');

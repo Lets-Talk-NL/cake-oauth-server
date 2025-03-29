@@ -2,56 +2,52 @@
 
 namespace OAuthServer;
 
-use Cake\Core\Plugin as CakePlugin;
 use Cake\Core\BasePlugin;
 use Cake\Core\Configure;
+use Cake\Core\Plugin as CakePlugin;
 use Cake\Event\Event;
 use Cake\Event\EventDispatcherInterface;
 use Cake\Event\EventDispatcherTrait;
 use Cake\ORM\Locator\LocatorAwareTrait;
+use Cake\Routing\RouteBuilder;
+use DateInterval;
+use function Functional\map;
+use InvalidArgumentException;
 use League\Event\EmitterAwareTrait;
 use League\OAuth2\Server\AuthorizationServer;
 use League\OAuth2\Server\CryptKey;
 use League\OAuth2\Server\Grant\GrantTypeInterface;
 use League\OAuth2\Server\ResourceServer;
+use LogicException;
+use OAuthServer\Exception\Exception;
 use OAuthServer\Lib\Enum\Extension;
 use OAuthServer\Lib\Enum\GrantType;
 use OAuthServer\Lib\Enum\Repository;
 use OAuthServer\Lib\Enum\Token;
 use OAuthServer\Lib\Factory;
-use DateInterval;
-use InvalidArgumentException;
-use LogicException;
-use OAuthServer\Exception\Exception;
 use OAuthServer\Lib\Traits\RepositoryAwareTrait;
 use OAuthServer\ORM\Locator\RepositoryLocator;
 use OpenIDConnectServer\ClaimExtractor;
-use function Functional\map;
 
 /**
  * OAuth 2.0 plugin object
  *
  * May construct more centrally plugin configured objects
  */
-class Plugin extends BasePlugin implements EventDispatcherInterface
+class OAuthServerPlugin extends BasePlugin implements EventDispatcherInterface
 {
     use EmitterAwareTrait;
     use LocatorAwareTrait;
     use RepositoryAwareTrait;
     use EventDispatcherTrait;
 
-    /**
-     * @inheritdoc
-     */
-    public function initialize()
+    public function initialize(): void
     {
         $this->initializeTableLocator();
     }
 
     /**
      * Initialize the OAuth 2.0 server repository table locator
-     *
-     * @return void
      */
     public function initializeTableLocator(): void
     {
@@ -62,10 +58,9 @@ class Plugin extends BasePlugin implements EventDispatcherInterface
     /**
      * Get the instance from the Cake application's plugin collection
      *
-     * @return Plugin
      * @throws LogicException
      */
-    public static function instance(): Plugin
+    public static function instance(): self
     {
         $name = 'OAuthServer';
         if (!$plugin = CakePlugin::getCollection()->get($name)) {
@@ -76,8 +71,6 @@ class Plugin extends BasePlugin implements EventDispatcherInterface
 
     /**
      * Get the OAuth 2.0 server private key object
-     *
-     * @return CryptKey
      */
     public function getPrivateKey(): ?CryptKey
     {
@@ -88,8 +81,6 @@ class Plugin extends BasePlugin implements EventDispatcherInterface
 
     /**
      * Get the OAuth 2.0 server public key object
-     *
-     * @return CryptKey
      */
     public function getPublicKey(): CryptKey
     {
@@ -100,7 +91,6 @@ class Plugin extends BasePlugin implements EventDispatcherInterface
     /**
      * Get the OAuth 2.0 server encryption key string
      *
-     * @return string
      * @throws LogicException
      */
     public function getEncryptionKey(): string
@@ -117,8 +107,6 @@ class Plugin extends BasePlugin implements EventDispatcherInterface
 
     /**
      * Get the OAuth 2.0 server default scope string
-     *
-     * @return string
      */
     public function getDefaultScope(): string
     {
@@ -128,9 +116,9 @@ class Plugin extends BasePlugin implements EventDispatcherInterface
     /**
      * Get the OAuth 2.0 server enabled grant objects
      *
-     * @return GrantTypeInterface[]
      * @throws InvalidArgumentException
      * @throws Exception
+     * @return GrantTypeInterface[]
      */
     public function getGrantObjects(): array
     {
@@ -168,24 +156,19 @@ class Plugin extends BasePlugin implements EventDispatcherInterface
      */
     public function getConfiguredExtensions(): array
     {
-        return map(Configure::read('OAuthServer.extensions') ?: [], fn($extension) => new Extension($extension));
+        return map(Configure::read('OAuthServer.extensions') ?: [], fn ($extension) => new Extension($extension));
     }
 
     /**
      * Check if an implemented OAuth 2.0 is configured
-     *
-     * @param Extension $extension
-     * @return bool
      */
     public function hasConfiguredExtension(Extension $extension): bool
     {
-        return in_array($extension->getValue(), map($this->getConfiguredExtensions(), fn(Extension $e) => $e->getValue()));
+        return in_array($extension->getValue(), map($this->getConfiguredExtensions(), fn (Extension $e) => $e->getValue()));
     }
 
     /**
      * Get the OAuth 2.0 authorization server handling object
-     *
-     * @return AuthorizationServer
      */
     public function getAuthorizationServer(): AuthorizationServer
     {
@@ -218,7 +201,6 @@ class Plugin extends BasePlugin implements EventDispatcherInterface
      * claims excluding JWT specified claims (so excluding the 'sub')
      *
      * @link https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
-     * @return ClaimExtractor
      */
     public function createOpenIDConnectClaimExtractor(): ClaimExtractor
     {
@@ -230,7 +212,6 @@ class Plugin extends BasePlugin implements EventDispatcherInterface
     /**
      * Get the OAuth 2.0 resouce server handling object
      *
-     * @return ResourceServer
      * @throws Exception
      */
     public function getResourceServer(): ResourceServer
@@ -243,8 +224,8 @@ class Plugin extends BasePlugin implements EventDispatcherInterface
     /**
      * Get the token time to live DateInterval objects by token type enum key
      *
-     * @return DateInterval[] e.g. [Token::ACCESS_TOKEN => Object(DateInterval), ...]
      * @throws InvalidArgumentException
+     * @return DateInterval[] e.g. [Token::ACCESS_TOKEN => Object(DateInterval), ...]
      */
     public function getTokensTimeToLiveIntervals(): array
     {
@@ -260,8 +241,6 @@ class Plugin extends BasePlugin implements EventDispatcherInterface
      *   extensions: ['openid_connect']
      *   refresh_tokens_enabled: true or false
      *   token_ttl_seconds: ['access_token': 86400, 'refresh_token': 86400, ...]
-     *
-     * @return array
      */
     public function getStatus(): array
     {
@@ -270,18 +249,28 @@ class Plugin extends BasePlugin implements EventDispatcherInterface
             $status['client_registration_url'] = $clientRegistrationUrl;
         }
         $status['service_status']         = Configure::read('OAuthServer.serviceDisabled') ? 'disabled' : 'enabled';
-        $status['grant_types']            = map(Plugin::instance()->getGrantObjects(), fn(GrantTypeInterface $grant) => $grant->getIdentifier());
-        $status['extensions']             = map(Plugin::instance()->getConfiguredExtensions(), fn(Extension $ext) => Extension::labels($ext->getValue()));
-        $status['refresh_tokens_enabled'] = !!Configure::read('OAuthServer.refreshTokensEnabled');
-        $ttl                              = Plugin::instance()->getTokensTimeToLiveIntervals();
-        $status['token_ttl_seconds']      = map($ttl, fn(DateInterval $interval) => Factory::intervalTimestamp($interval));
+        $status['grant_types']            = map(self::instance()->getGrantObjects(), fn (GrantTypeInterface $grant) => $grant->getIdentifier());
+        $status['extensions']             = map(self::instance()->getConfiguredExtensions(), fn (Extension $ext) => Extension::labels($ext->getValue()));
+        $status['refresh_tokens_enabled'] = (bool)Configure::read('OAuthServer.refreshTokensEnabled');
+        $ttl                              = self::instance()->getTokensTimeToLiveIntervals();
+        $status['token_ttl_seconds']      = map($ttl, fn (DateInterval $interval) => Factory::intervalTimestamp($interval));
         return $status;
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function getPath()
+    public function routes(RouteBuilder $routes): void
+    {
+        parent::routes($routes);
+
+        $routes->plugin('OAuthServer', ['path' => '/oauth'], function (RouteBuilder $routes) {
+            $routes->connect('/', ['controller' => 'OAuth', 'action' => 'index']);
+            $routes->connect('/authorize', ['controller' => 'OAuth', 'action' => 'authorize']);
+            $routes->connect('/access_token', ['controller' => 'OAuth', 'action' => 'accessToken'], ['_ext' => ['json']]);
+            $routes->connect('/status', ['controller' => 'OAuth', 'action' => 'status'], ['_ext' => ['json']]);
+            $routes->connect('/userinfo', ['controller' => 'OAuth', 'action' => 'userInfo'], ['_ext' => ['json']]);
+        });
+    }
+
+    public function getPath(): string
     {
         // @TODO for some reason path is not giving back trailing slash so add it back here but find out why sometime
         return rtrim(parent::getPath(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;

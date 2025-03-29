@@ -2,9 +2,9 @@
 
 namespace OAuthServer\Model\Table;
 
+use Cake\Datasource\EntityInterface;
 use Cake\ORM\Association\BelongsTo;
 use Cake\ORM\Table;
-use Cake\Datasource\EntityInterface;
 use OAuthServer\Model\Entity\AccessTokenScope;
 
 /**
@@ -22,13 +22,10 @@ use OAuthServer\Model\Entity\AccessTokenScope;
  */
 class AccessTokenScopesTable extends Table
 {
-    /**
-     * @inheritDoc
-     */
-    public function initialize(array $config)
+    public function initialize(array $config): void
     {
         parent::initialize($config);
-        $this->table('oauth_access_token_scopes');
+        $this->setTable('oauth_access_token_scopes');
         $this->setPrimaryKey('id');
         $this->setEntityClass('OAuthServer.AccessTokenScope');
         $this->belongsTo('AccessTokens', [

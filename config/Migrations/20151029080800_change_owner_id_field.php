@@ -7,9 +7,6 @@ use Migrations\AbstractMigration;
  */
 class ChangeOwnerIdField extends AbstractMigration
 {
-    /**
-     * @inheritDoc
-     */
     public function up()
     {
         $this->table('oauth_sessions')
@@ -17,9 +14,6 @@ class ChangeOwnerIdField extends AbstractMigration
              ->update();
     }
 
-    /**
-     * @inheritDoc
-     */
     public function down()
     {
         $this->table('oauth_sessions')

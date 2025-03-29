@@ -9,9 +9,6 @@ use Migrations\AbstractMigration;
  */
 class AddTokenClientAndUserAssoc extends AbstractMigration
 {
-    /**
-     * @inheritDoc
-     */
     public function up()
     {
         $this->table('oauth_access_tokens')
@@ -25,9 +22,6 @@ class AddTokenClientAndUserAssoc extends AbstractMigration
              ->update();
     }
 
-    /**
-     * @inheritDoc
-     */
     public function down()
     {
         $this->table('oauth_access_tokens')
