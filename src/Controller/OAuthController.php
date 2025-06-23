@@ -56,7 +56,7 @@ class OAuthController extends AppController
         /** @var AuthenticationComponent $authenticationComponent */
         $authenticationComponent = $this->components()->get('Authentication');
         if ($this->components()->has('Authentication')) {
-            $authenticationComponent->setConfig('requireIdentity', false);
+            $authenticationComponent->setConfig('requireIdentity', true);
             $authenticationComponent->allowUnauthenticated(['oauth', 'accessToken', 'status', 'userInfo']);
         }
 

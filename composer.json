@@ -2,7 +2,7 @@
     "name": "uafrica/oauth-server",
     "description": "OAuth Server for CakePHP 3 using the PHP League's OAuth2 Server",
     "type": "cakephp-plugin",
-    "version": "0.7.0",
+    "version": "0.7.1",
     "keywords": [
         "cakephp",
         "oauth",
