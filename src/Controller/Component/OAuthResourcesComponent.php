@@ -174,8 +174,7 @@ class OAuthResourcesComponent extends Component
         $request    = $controller->getRequest();
         $response   = $controller->getResponse();
 
-        $action = strtolower($request->getParam('action'));
-        if (!$controller->isAction($action)) {
+        if (!$controller->isAction($request->getParam('action'))) {
             return null;
         }
 
